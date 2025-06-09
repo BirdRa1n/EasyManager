@@ -5,65 +5,45 @@ export const siteConfig = {
   description: "Make beautiful websites regardless of your design experience.",
   navItems: [
     {
-      label: "Home",
+      label: "Início",
       href: "/",
     },
     {
-      label: "Docs",
-      href: "/docs",
-    },
-    {
-      label: "Pricing",
+      label: "Preços",
       href: "/pricing",
     },
     {
-      label: "Blog",
-      href: "/blog",
-    },
-    {
-      label: "About",
+      label: "Sobre",
       href: "/about",
     },
   ],
   navMenuItems: [
     {
-      label: "Profile",
-      href: "/profile",
-    },
-    {
       label: "Dashboard",
       href: "/dashboard",
     },
     {
-      label: "Projects",
-      href: "/projects",
-    },
-    {
-      label: "Team",
+      label: "Organização",
       href: "/team",
     },
     {
-      label: "Calendar",
-      href: "/calendar",
-    },
-    {
-      label: "Settings",
+      label: "Configurações",
       href: "/settings",
     },
     {
-      label: "Help & Feedback",
+      label: "Ajuda & Feedback",
       href: "/help-feedback",
     },
     {
-      label: "Logout",
+      label: "Sair",
       href: "/logout",
     },
   ],
   links: {
-    github: "https://github.com/heroui-inc/heroui",
-    twitter: "https://twitter.com/hero_ui",
-    docs: "https://heroui.com",
-    discord: "https://discord.gg/9b6yyZKmH4",
-    sponsor: "https://patreon.com/jrgarciadev",
+    github: "https://github.com/birdra1n",
+    twitter: "https://twitter.com/birdra1n",
+    docs: "https://birdra1n.github.io",
+    discord: "https://discord.gg/birdra1n",
+    sponsor: "https://patreon.com/birdra1n",
   },
 };
