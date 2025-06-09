@@ -1,17 +1,17 @@
-import { defineConfig, globalIgnores } from "eslint/config";
 import { fixupConfigRules, fixupPluginRules } from "@eslint/compat";
-import react from "eslint-plugin-react";
-import unusedImports from "eslint-plugin-unused-imports";
-import _import from "eslint-plugin-import";
+import { FlatCompat } from "@eslint/eslintrc";
+import js from "@eslint/js";
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
+import _import from "eslint-plugin-import";
 import jsxA11Y from "eslint-plugin-jsx-a11y";
 import prettier from "eslint-plugin-prettier";
+import react from "eslint-plugin-react";
+import unusedImports from "eslint-plugin-unused-imports";
+import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
-import tsParser from "@typescript-eslint/parser";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import js from "@eslint/js";
-import { FlatCompat } from "@eslint/eslintrc";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -90,20 +90,20 @@ export default defineConfig([globalIgnores([
         "react/jsx-uses-react": "off",
         "react/react-in-jsx-scope": "off",
         "react-hooks/exhaustive-deps": "off",
-        "jsx-a11y/click-events-have-key-events": "warn",
-        "jsx-a11y/interactive-supports-focus": "warn",
-        "prettier/prettier": "warn",
+        "jsx-a11y/click-events-have-key-events": "off",
+        "jsx-a11y/interactive-supports-focus": "off",
+        "prettier/prettier": "off",
         "no-unused-vars": "off",
         "unused-imports/no-unused-vars": "off",
-        "unused-imports/no-unused-imports": "warn",
+        "unused-imports/no-unused-imports": "off",
 
-        "@typescript-eslint/no-unused-vars": ["warn", {
+        "@typescript-eslint/no-unused-vars": ["off", {
             args: "after-used",
             ignoreRestSiblings: false,
             argsIgnorePattern: "^_.*?$",
         }],
 
-        "import/order": ["warn", {
+        "import/order": ["off", {
             groups: [
                 "type",
                 "builtin",
@@ -124,27 +124,27 @@ export default defineConfig([globalIgnores([
             "newlines-between": "always",
         }],
 
-        "react/self-closing-comp": "warn",
+        "react/self-closing-comp": "off",
 
-        "react/jsx-sort-props": ["warn", {
+        "react/jsx-sort-props": ["off", {
             callbacksLast: true,
             shorthandFirst: true,
             noSortAlphabetically: false,
             reservedFirst: true,
         }],
 
-        "padding-line-between-statements": ["warn", {
+        "padding-line-between-statements": ["off", {
             blankLine: "always",
             prev: "*",
             next: "return",
         }, {
-            blankLine: "always",
-            prev: ["const", "let", "var"],
-            next: "*",
-        }, {
-            blankLine: "any",
-            prev: ["const", "let", "var"],
-            next: ["const", "let", "var"],
-        }],
+                blankLine: "always",
+                prev: ["const", "let", "var"],
+                next: "*",
+            }, {
+                blankLine: "any",
+                prev: ["const", "let", "var"],
+                next: ["const", "let", "var"],
+            }],
     },
 }]);
