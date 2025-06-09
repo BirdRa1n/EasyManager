@@ -1,7 +1,9 @@
 import { useSidebarContext } from "@/layouts/layout-context";
-import { FaMicrochip } from "react-icons/fa6";
+import { FaBuilding } from "react-icons/fa6";
 import { CustomersIcon } from "../icons/sidebar/customers-icon";
 import { HomeIcon } from "../icons/sidebar/home-icon";
+import { PaymentsIcon } from "../icons/sidebar/payments-icon";
+import { ProductsIcon } from "../icons/sidebar/products-icon";
 import { ReportsIcon } from "../icons/sidebar/reports-icon";
 import { SettingsIcon } from "../icons/sidebar/settings-icon";
 import { CompaniesDropdown } from "./companies-dropdown";
@@ -33,7 +35,7 @@ export const SidebarWrapper = () => {
               isActive={sidebarActiveItem === "home"}
               onClick={() => { setSidebarActiveItem("home") }}
             />
-            <SidebarMenu title="Main Menu">
+            <SidebarMenu title="Geral">
               <SidebarItem
                 isActive={sidebarActiveItem === "members"}
                 title="Equipe"
@@ -41,20 +43,42 @@ export const SidebarWrapper = () => {
                 onClick={() => { setSidebarActiveItem("members") }}
               />
               <SidebarItem
-                isActive={sidebarActiveItem === "devices"}
-                title="Dispositivos"
-                onClick={() => { setSidebarActiveItem("devices") }}
-                icon={<FaMicrochip className="fill-default-400 min-h-[44px] min-w-[22px] mr-0.4" />}
+                isActive={sidebarActiveItem === "products"}
+                title="Produtos"
+                onClick={() => { setSidebarActiveItem("products") }}
+                icon={<ProductsIcon />}
               />
               <SidebarItem
-                isActive={sidebarActiveItem === "requests"}
-                onClick={() => { setSidebarActiveItem("requests") }}
-                title="Solicitações"
+                isActive={sidebarActiveItem === "services"}
+                onClick={() => { setSidebarActiveItem("services") }}
+                title="Serviços"
+                icon={<ReportsIcon />}
+              />
+              <SidebarItem
+                isActive={sidebarActiveItem === "suppliers"}
+                onClick={() => { setSidebarActiveItem("suppliers") }}
+                title="Fornecedores"
+                icon={<FaBuilding className="fill-default-400 min-h-[24px] min-w-24px] ml-1" />
+                }
+              />
+            </SidebarMenu>
+
+            <SidebarMenu title="Relatórios">
+              <SidebarItem
+                isActive={sidebarActiveItem === "payments"}
+                onClick={() => { setSidebarActiveItem("payments") }}
+                title="Vendas"
+                icon={<PaymentsIcon />}
+              />
+              <SidebarItem
+                isActive={sidebarActiveItem === "reports"}
+                onClick={() => { setSidebarActiveItem("reports") }}
+                title="Relatórios"
                 icon={<ReportsIcon />}
               />
             </SidebarMenu>
 
-            <SidebarMenu title="General">
+            <SidebarMenu title="Opções">
               <SidebarItem
                 isActive={sidebarActiveItem === "settings"}
                 onClick={() => { setSidebarActiveItem("settings") }}

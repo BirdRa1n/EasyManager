@@ -1,26 +1,40 @@
+import Home from "@/constants/dashboard/home";
+import Products from "@/constants/dashboard/products";
+import Settings from "@/constants/dashboard/settings";
+import { useSidebarContext } from "@/contexts/sidebar";
 import { useUser } from "@/contexts/user";
 import { Layout } from "@/layouts/layout-sidebar";
 import { useEffect } from "react";
 
 export default function DashboardPage() {
     const { user, fetchTeam } = useUser();
+    const { sidebarActiveItem } = useSidebarContext();
 
     useEffect(() => {
         if (user) {
             fetchTeam();
         }
     }, [user]);
-    return (
-        <Layout>
-            <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
-                <div className="inline-block max-w-lg text-center justify-center">
-                    <h1 className="text-3xl font-bold">Dashboard</h1>
-                    <p className="mt-2 text-lg text-gray-600">
-                        Welcome to your dashboard! Here you can manage your account settings,
-                        view analytics, and more.
-                    </p>
+
+    const renderer = () => {
+        return (
+            <section className="flex flex-col gap-4 p-6 mt-5 py-0 md:py-0">
+                <div style={{ display: sidebarActiveItem === "home" ? "block" : "none" }}>
+                    <Home />
+                </div>
+                <div style={{ display: sidebarActiveItem === "products" ? "block" : "none" }}>
+                    {<Products />}
+                </div>
+                <div style={{ display: sidebarActiveItem === "settings" ? "block" : "none" }}>
+                    {<Settings />}
                 </div>
             </section>
+        )
+    };
+
+    return (
+        <Layout>
+            {renderer()}
         </Layout>
     );
 }

@@ -1,5 +1,7 @@
+import { useSidebarContext } from "@/layouts/layout-context";
 import { Input } from "@heroui/input";
 import { Navbar, NavbarContent } from "@heroui/navbar";
+import { BreadcrumbItem, Breadcrumbs } from "@heroui/react";
 import React from "react";
 import { SearchIcon } from "../icons/searchicon";
 import { BurguerButton } from "./burguer-button";
@@ -12,6 +14,30 @@ interface Props {
 }
 
 export const NavbarWrapper = ({ children }: Props) => {
+  const { sidebarActiveItem } = useSidebarContext();
+
+  const filterName = () => {
+    switch (sidebarActiveItem) {
+      case "home":
+        return "Início"
+      case "members":
+        return "Equipe"
+      case "products":
+        return "Produtos"
+      case "payments":
+        return "Pagamentos"
+      case "services":
+        return "Serviços"
+      case "reports":
+        return "Relatórios"
+      case "settings":
+        return "Configurações"
+      case "suppliers":
+        return "Fornecedores"
+      default:
+        return "Desconhecido"
+    }
+  }
 
   return (
     <div className="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
@@ -26,11 +52,15 @@ export const NavbarWrapper = ({ children }: Props) => {
           <BurguerButton />
         </NavbarContent>
         <NavbarContent className="w-full max-md:hidden">
+          <Breadcrumbs >
+            <BreadcrumbItem>Dashboard</BreadcrumbItem>
+            <BreadcrumbItem>{filterName()}</BreadcrumbItem>
+          </Breadcrumbs>
           <Input
             startContent={<SearchIcon />}
             isClearable
             radius="md"
-            className="w-full"
+            className="w-full hidden"
             classNames={{
               input: "w-full",
               mainWrapper: "w-full",

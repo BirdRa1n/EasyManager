@@ -4,7 +4,6 @@ import { useUser } from "@/contexts/user";
 import { Spinner } from "@heroui/react";
 import React, { useEffect, useState } from "react";
 import { AcmeIcon } from "../icons/acme-icon";
-import { BottomIcon } from "../icons/sidebar/bottom-icon";
 
 interface Company {
   name: string;
@@ -54,7 +53,6 @@ export const CompaniesDropdown = () => {
           {company.location}
         </span>
       </div>
-      <BottomIcon />
     </div>
   );
 };

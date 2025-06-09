@@ -19,6 +19,7 @@ const AuthForm = () => {
                 title: "Erro ao fazer login",
                 description: error.message,
                 color: "danger",
+                variant: "solid",
                 timeout: 3000,
             });
             return;
@@ -28,7 +29,8 @@ const AuthForm = () => {
             addToast({
                 title: "Login realizado com sucesso!",
                 description: "Você será redirecionado para o dashboard.",
-                color: "success",
+                variant: "solid",
+                color: "primary",
                 timeout: 3000,
                 shouldShowTimeoutProgress: true,
                 promise: new Promise(() => setTimeout(window.location.href = "/dashboard", 3000))
@@ -40,6 +42,7 @@ const AuthForm = () => {
         if (!name || !email || !password) {
             addToast({
                 title: "Erro",
+                variant: "solid",
                 description: "Por favor, preencha todos os campos.",
                 color: "danger",
                 timeout: 3000,
@@ -65,6 +68,7 @@ const AuthForm = () => {
             addToast({
                 title: "Erro ao criar conta",
                 description: error.message,
+                variant: "solid",
                 color: "danger",
                 timeout: 3000,
             });
@@ -75,7 +79,8 @@ const AuthForm = () => {
             addToast({
                 title: "Conta criada com sucesso!",
                 description: "Verifique seu email para ativar sua conta.",
-                color: "success",
+                variant: "solid",
+                color: "primary",
                 timeout: 3000
             });
             setSelected("login");
