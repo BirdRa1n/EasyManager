@@ -4,16 +4,18 @@ import AuthForm from "@/components/forms/auth";
 import { subtitle, title } from "@/components/primitives";
 import { useUser } from "@/contexts/user";
 import DefaultLayout from "@/layouts/default";
+import { useRouter } from "next/router";
 import React from "react";
 
 export default function IndexPage() {
   const { user } = useUser();
+  const router = useRouter();
 
   React.useEffect(() => {
     if (user) {
-      window.location.href = "/dashboard";
+      router.replace("/dashboard");
     }
-  }, [user]);
+  }, [user, router]);
 
   return (
     <DefaultLayout>

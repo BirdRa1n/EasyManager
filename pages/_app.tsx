@@ -6,6 +6,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useRouter } from "next/router";
 
 import { fontMono, fontSans } from "@/config/fonts";
+import { SidebarProvider } from "@/contexts/sidebar";
 import { UserProvider } from "@/contexts/user";
 import "@/styles/globals.css";
 
@@ -13,14 +14,17 @@ export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
   return (
-    <UserProvider>
+
+    <SidebarProvider>
       <HeroUIProvider navigate={router.push}>
         <NextThemesProvider>
-          <ToastProvider />
-          <Component {...pageProps} />
+          <UserProvider>
+            <ToastProvider />
+            <Component {...pageProps} />
+          </UserProvider>
         </NextThemesProvider>
       </HeroUIProvider>
-    </UserProvider>
+    </SidebarProvider>
   );
 }
 

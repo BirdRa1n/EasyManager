@@ -30,9 +30,8 @@ const AuthForm = () => {
                 description: "Você será redirecionado para o dashboard.",
                 color: "success",
                 timeout: 3000,
-                onClose: () => {
-                    window.location.href = "/dashboard";
-                }
+                shouldShowTimeoutProgress: true,
+                promise: new Promise(() => setTimeout(window.location.href = "/dashboard", 3000))
             });
         }
     };
