@@ -1,8 +1,6 @@
 import { useSidebarContext } from "@/layouts/layout-context";
 import { FaMicrochip } from "react-icons/fa6";
-import { ChangeLogIcon } from "../icons/sidebar/changelog-icon";
 import { CustomersIcon } from "../icons/sidebar/customers-icon";
-import { DevIcon } from "../icons/sidebar/dev-icon";
 import { HomeIcon } from "../icons/sidebar/home-icon";
 import { ReportsIcon } from "../icons/sidebar/reports-icon";
 import { SettingsIcon } from "../icons/sidebar/settings-icon";

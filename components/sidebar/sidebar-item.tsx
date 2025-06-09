@@ -1,8 +1,8 @@
-import NextLink from "next/link";
-import React from "react";
+import usePrimaryColor from "@/constants/Colors";
 import { useSidebarContext } from "@/contexts/sidebar";
 import clsx from "clsx";
-import usePrimaryColor from "@/constants/Colors";
+import NextLink from "next/link";
+import React from "react";
 
 interface Props {
   title: string;
