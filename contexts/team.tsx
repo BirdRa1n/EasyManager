@@ -37,16 +37,15 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             } else {
                 setTeam(undefined);
                 localStorage.removeItem("team");
-                onOpen();
             }
         } catch (error: any) {
             console.error("Error fetching team:", error.message);
             setError(error.message);
-            if (error.code === "PGRST116" || error.code === "42P17") {
+            if (error?.code === "PGRST116") {
                 onOpen();
             }
         }
-    }, [onOpen]);
+    }, []);
 
     const createTeam = useCallback(
         async (e: React.FormEvent<HTMLFormElement>) => {
@@ -125,6 +124,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }),
         [team, error, fetchTeam, createTeam],
     );
+
 
     return (
         <TeamContext.Provider value={contextValue}>

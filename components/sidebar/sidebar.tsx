@@ -1,5 +1,5 @@
 import { useSidebarContext } from "@/layouts/layout-context";
-import { FaBuilding } from "react-icons/fa6";
+import { FaBuilding, FaStore } from "react-icons/fa6";
 import { CustomersIcon } from "../icons/sidebar/customers-icon";
 import { HomeIcon } from "../icons/sidebar/home-icon";
 import { PaymentsIcon } from "../icons/sidebar/payments-icon";
@@ -53,6 +53,12 @@ export const SidebarWrapper = () => {
                 onClick={() => { setSidebarActiveItem("services") }}
                 title="Serviços"
                 icon={<ReportsIcon />}
+              />
+              <SidebarItem
+                isActive={sidebarActiveItem === "stores"}
+                onClick={() => { setSidebarActiveItem("stores") }}
+                title="Lojas"
+                icon={<FaStore className="fill-default-400 text-[24px] ml-0" />}
               />
               <SidebarItem
                 isActive={sidebarActiveItem === "suppliers"}

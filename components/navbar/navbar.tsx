@@ -34,6 +34,8 @@ export const NavbarWrapper = ({ children }: Props) => {
         return "Configurações"
       case "suppliers":
         return "Fornecedores"
+      case "stores":
+        return "Lojas"
       default:
         return "Desconhecido"
     }

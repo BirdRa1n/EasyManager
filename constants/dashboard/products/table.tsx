@@ -1,11 +1,13 @@
 import { useProducts } from "@/contexts/products";
 import {
+    Avatar,
     Button,
     Chip,
     Dropdown,
     DropdownItem,
     DropdownMenu,
     DropdownTrigger,
+    Image,
     Input,
     Pagination,
     Selection,
@@ -16,8 +18,13 @@ import {
     TableColumn,
     TableHeader,
     TableRow,
+    useDisclosure
 } from "@heroui/react";
 import React, { SVGProps, useState } from "react";
+
+import NewProductForm from "@/components/forms/products/new";
+import { Modal, ModalContent } from "@heroui/react";
+import { FaTags } from "react-icons/fa6";
 
 export type IconSvgProps = SVGProps<SVGSVGElement> & {
     size?: number;
@@ -146,6 +153,7 @@ interface Product {
     name: string;
     description: string;
     store_products: StoreProduct[];
+    image?: string;
 }
 
 export default function ProductTable() {
@@ -161,6 +169,7 @@ export default function ProductTable() {
     });
     const [page, setPage] = React.useState(1);
     const [error, setError] = useState<string | null>(null);
+    const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const { products } = useProducts();
 
     const hasSearchFilter = Boolean(filterValue);
@@ -209,9 +218,39 @@ export default function ProductTable() {
     const renderCell = React.useCallback((product: Product, columnKey: React.Key) => {
         switch (columnKey) {
             case "name":
-                return <p className="text-bold text-small">{product.name}</p>;
+                return (
+                    <div className="flex flex-row gap-1 items-start w-full">
+                        {product.image ? (
+                            <Image
+                                className='bg-default-100 max-w-[120px] max-h-[120px]'
+                                width={60}
+                                radius='sm'
+                                src={`${product?.image}`}
+                            />
+                        ) : (
+                            <Avatar
+                                radius="sm"
+                                classNames={{
+                                    base: "bg-gradient-to-br from-[#FFB457] to-[#FF705B]",
+                                    icon: "text-black/80",
+                                }}
+                                icon={<FaTags className="text-default-200" />}
+                            />
+                        )
+                        }
+                        <p className={`text-bold text-small line-clamp-2 overflow-hidden text-ellipsis ${!product.image ? 'ml-1' : ''}`}>
+                            {product.name}
+                        </p>
+                    </div>
+                );
             case "description":
-                return <p className="text-small text-default-400">{product.description}</p>;
+                return (
+                    <div className="flex flex-row gap-1 items-start w-full">
+                        <p className="text-small text-default-400 line-clamp-3 overflow-hidden text-ellipsis">
+                            {product.description}
+                        </p>
+                    </div>
+                );
             case "price":
                 return (
                     <p className="text-small">
@@ -324,7 +363,7 @@ export default function ProductTable() {
                                 ))}
                             </DropdownMenu>
                         </Dropdown>
-                        <Button color="primary" endContent={<PlusIcon />}>
+                        <Button color="primary" onPress={onOpen} endContent={<PlusIcon />}>
                             Adicionar
                         </Button>
                     </div>
@@ -381,40 +420,51 @@ export default function ProductTable() {
     }
 
     return (
-        <Table
-            isHeaderSticky
-            aria-label="Product table with custom cells, pagination and sorting"
-            bottomContent={bottomContent}
-            bottomContentPlacement="outside"
-            classNames={{
-                wrapper: "max-h-[382px]",
-            }}
-            selectedKeys={selectedKeys}
-            selectionMode="multiple"
-            sortDescriptor={sortDescriptor}
-            topContent={topContent}
-            topContentPlacement="outside"
-            onSelectionChange={setSelectedKeys}
-            onSortChange={setSortDescriptor}
-        >
-            <TableHeader columns={headerColumns}>
-                {(column) => (
-                    <TableColumn
-                        key={column.uid}
-                        align={column.uid === "actions" ? "center" : "start"}
-                        allowsSorting={column.sortable}
-                    >
-                        {column.name}
-                    </TableColumn>
-                )}
-            </TableHeader>
-            <TableBody emptyContent={"No products found"} items={sortedItems}>
-                {(item) => (
-                    <TableRow key={item.id}>
-                        {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
+        <>
+            <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <NewProductForm onClose={onClose} />
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
+            <Table
+                isHeaderSticky
+                aria-label="Product table with custom cells, pagination and sorting"
+                bottomContent={bottomContent}
+                bottomContentPlacement="outside"
+                classNames={{
+                    wrapper: "max-h-[382px]",
+                }}
+                selectedKeys={selectedKeys}
+                selectionMode="multiple"
+                sortDescriptor={sortDescriptor}
+                topContent={topContent}
+                topContentPlacement="outside"
+                onSelectionChange={setSelectedKeys}
+                onSortChange={setSortDescriptor}
+            >
+                <TableHeader columns={headerColumns}>
+                    {(column) => (
+                        <TableColumn
+                            key={column.uid}
+                            align={column.uid === "actions" ? "center" : "start"}
+                            allowsSorting={column.sortable}
+                        >
+                            {column.name}
+                        </TableColumn>
+                    )}
+                </TableHeader>
+                <TableBody emptyContent={"No products found"} items={sortedItems}>
+                    {(item) => (
+                        <TableRow key={item.id}>
+                            {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+        </>
     );
 }

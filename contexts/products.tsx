@@ -21,16 +21,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         try {
             if (!team?.id) return;
 
-            const { data, error } = await supabase.from("products").select(`
-    *,
-    product_identifiers(*),
-    categories(*),
-    store_products (
-      *,
-      stores (*)
-    )
-  `)
-                .eq("team_id", team.id);
+            const { data, error } = await supabase.from("products").select(`*,product_identifiers(*),categories(*),store_products (*,stores (*))`).eq("team_id", team.id);
             if (error) throw error;
             setProducts(data);
         } catch (error: any) {
