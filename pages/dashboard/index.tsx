@@ -1,11 +1,39 @@
+"use client";
 import Home from "@/constants/dashboard/home";
 import Products from "@/constants/dashboard/products";
 import Settings from "@/constants/dashboard/settings";
 import { useSidebarContext } from "@/contexts/sidebar";
+import { useUser } from "@/contexts/user";
 import { Layout } from "@/layouts/layout-sidebar";
+import { supabase } from "@/supabase/client";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
 
 export default function DashboardPage() {
     const { sidebarActiveItem } = useSidebarContext();
+    const { fetchUser } = useUser();
+
+    const router = useRouter();
+
+    // ⚡️ Troca o código por uma sessão válida
+    useEffect(() => {
+        const exchangeCode = async () => {
+            const url = new URL(window.location.href);
+            const code = url.searchParams.get("code");
+
+            if (code) {
+                const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+                if (error) {
+                    router.push("/");
+                } else {
+                    fetchUser();
+                }
+            }
+        };
+
+        exchangeCode();
+    }, []);
 
     const renderer = () => {
         return (
@@ -14,18 +42,14 @@ export default function DashboardPage() {
                     <Home />
                 </div>
                 <div style={{ display: sidebarActiveItem === "products" ? "block" : "none" }}>
-                    {<Products />}
+                    <Products />
                 </div>
                 <div style={{ display: sidebarActiveItem === "settings" ? "block" : "none" }}>
-                    {<Settings />}
+                    <Settings />
                 </div>
             </section>
-        )
+        );
     };
 
-    return (
-        <Layout>
-            {renderer()}
-        </Layout>
-    );
+    return <Layout>{renderer()}</Layout>;
 }

@@ -27,7 +27,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             const { data, error } = await supabase
                 .from("teams")
                 .select("*")
-                .single();
+                .maybeSingle()
 
             if (error) throw error;
 
@@ -35,15 +35,13 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                 setTeam(data);
                 localStorage.setItem("team", JSON.stringify(data));
             } else {
+                onOpen();
                 setTeam(undefined);
                 localStorage.removeItem("team");
             }
         } catch (error: any) {
             console.error("Error fetching team:", error.message);
             setError(error.message);
-            if (error?.code === "PGRST116") {
-                onOpen();
-            }
         }
     }, []);
 
@@ -103,10 +101,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const storedTeam = localStorage.getItem("team");
         if (storedTeam) {
             setTeam(JSON.parse(storedTeam));
-        } else {
-            fetchTeam();
         }
-    }, [fetchTeam]);
+    }, []);
 
     useEffect(() => {
         if (user?.id) {

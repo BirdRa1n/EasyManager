@@ -57,6 +57,7 @@ const AuthForm = () => {
             email,
             password,
             options: {
+                emailRedirectTo: 'https://easymanager.birdra1n.com/dashboard',
                 data: {
                     first_name,
                     last_name
