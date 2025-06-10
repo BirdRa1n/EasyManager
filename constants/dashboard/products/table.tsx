@@ -1,3 +1,4 @@
+import { useProducts } from "@/contexts/products";
 import {
     Button,
     Chip,
@@ -16,8 +17,7 @@ import {
     TableHeader,
     TableRow,
 } from "@heroui/react";
-import axios from "axios";
-import React, { SVGProps, useEffect, useState } from "react";
+import React, { SVGProps, useState } from "react";
 
 export type IconSvgProps = SVGProps<SVGSVGElement> & {
     size?: number;
@@ -160,27 +160,8 @@ export default function ProductTable() {
         direction: "ascending",
     });
     const [page, setPage] = React.useState(1);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                setIsLoading(true);
-                const response = await axios.get("/api/products");
-                setProducts(response.data);
-                setError(null);
-            } catch (error) {
-                console.error("Error fetching products:", error);
-                setError("Failed to load products");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchProducts();
-    }, []);
+    const { products } = useProducts();
 
     const hasSearchFilter = Boolean(filterValue);
 
@@ -394,10 +375,6 @@ export default function ProductTable() {
             </div>
         );
     }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
-
-    if (isLoading) {
-        return <div>Loading products...</div>;
-    }
 
     if (error) {
         return <div className="text-danger">{error}</div>;

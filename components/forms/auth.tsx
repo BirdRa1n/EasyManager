@@ -91,12 +91,13 @@ const AuthForm = () => {
         <Tabs
             fullWidth
             aria-label="Tabs form"
+            color="default"
             //@ts-ignore
             selectedKey={selected}
             size="md"
             onSelectionChange={setSelected}
         >
-            <Tab key="login" title="Entrar">
+            <Tab key="login" title="Login">
                 <form className="flex flex-col gap-4">
                     <Input isRequired label="Email" placeholder="Digite seu email" type="email" onChange={(e) => setEmail(e.target.value)} value={email} />
                     <Input

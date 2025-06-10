@@ -2,19 +2,10 @@ import Home from "@/constants/dashboard/home";
 import Products from "@/constants/dashboard/products";
 import Settings from "@/constants/dashboard/settings";
 import { useSidebarContext } from "@/contexts/sidebar";
-import { useUser } from "@/contexts/user";
 import { Layout } from "@/layouts/layout-sidebar";
-import { useEffect } from "react";
 
 export default function DashboardPage() {
-    const { user, fetchTeam } = useUser();
     const { sidebarActiveItem } = useSidebarContext();
-
-    useEffect(() => {
-        if (user) {
-            fetchTeam();
-        }
-    }, [user]);
 
     const renderer = () => {
         return (

@@ -1,6 +1,6 @@
 "use client";
 import usePrimaryColor from "@/constants/Colors";
-import { useUser } from "@/contexts/user";
+import { useTeam } from "@/contexts/team";
 import { Spinner } from "@heroui/react";
 import React, { useEffect, useState } from "react";
 import { AcmeIcon } from "../icons/acme-icon";
@@ -12,7 +12,7 @@ interface Company {
 }
 
 export const CompaniesDropdown = () => {
-  const { team } = useUser();
+  const { team } = useTeam();
   const [loading, setLoading] = useState(true);
   const primaryColor = usePrimaryColor();
 
