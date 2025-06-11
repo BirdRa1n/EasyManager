@@ -219,7 +219,7 @@ export default function ProductTable() {
         switch (columnKey) {
             case "name":
                 return (
-                    <div className="flex flex-row gap-1 items-start w-full">
+                    <div className="flex flex-row gap-2 items-start w-full">
                         {product.image ? (
                             <Image
                                 className='bg-default-100 max-w-[120px] max-h-[120px]'
