@@ -8,6 +8,8 @@ import { useUser } from "./user";
 
 interface TeamContextType {
     team?: any;
+    members?: any;
+    stores?: any;
     error?: string;
     setTeam: (team: any) => void;
     fetchTeam: () => Promise<void>;
@@ -19,6 +21,8 @@ const TeamContext = createContext<TeamContextType | undefined>(undefined);
 export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure();
     const [team, setTeam] = useState<any>();
+    const [members, setMembers] = useState<any>([]);
+    const [stores, setStores] = useState<any>([]);
     const [error, setError] = useState<string>("");
     const { user } = useUser();
 
@@ -44,6 +48,39 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             setError(error.message);
         }
     }, []);
+
+    const fetchMembers = useCallback(async () => {
+        try {
+            const { data, error } = await supabase.from("team_members").select("*").eq("team_id", team?.id);
+            if (error) throw error;
+            setMembers(data);
+        } catch (error: any) {
+            console.error("Error fetching members:", error.message);
+            setError(error.message);
+        }
+    }, [team]);
+
+    const fetchStores = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from("stores")
+                .select("*, store_address!fk_store(*), store_contacts!fk_store(*)") // ou outro nome
+                .eq("team_id", team?.id);
+
+            if (error) throw error;
+            setStores(data);
+        } catch (error: any) {
+            console.error("Error fetching stores:", error.message);
+            setError(error.message);
+        }
+    }, [team]);
+
+    useEffect(() => {
+        if (team?.id) {
+            fetchMembers();
+            fetchStores();
+        }
+    }, [team?.id, fetchMembers]);
 
     const createTeam = useCallback(
         async (e: React.FormEvent<HTMLFormElement>) => {
@@ -113,6 +150,8 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const contextValue = useMemo(
         () => ({
             team,
+            members,
+            stores,
             setTeam,
             error,
             fetchTeam,

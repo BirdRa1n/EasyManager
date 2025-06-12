@@ -23,7 +23,7 @@ export const DarkModeSwitch = () => {
       size="sm"
       color={primaryColor}
       thumbIcon={({ isSelected, className }) =>
-        isSelected ? <IoMdMoon className={className} /> : <MdOutlineWbSunny className={className} />
+        isSelected ? <MdOutlineWbSunny className={className} /> : <IoMdMoon className={className} />
       }
       isSelected={resolvedTheme === "dark"}
       onValueChange={(e) => setTheme(e ? "dark" : "light")}

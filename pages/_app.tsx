@@ -1,16 +1,16 @@
 import type { AppProps } from "next/app";
 
-import { HeroUIProvider } from "@heroui/system";
-import { ToastProvider } from "@heroui/toast";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { useRouter } from "next/router";
-
 import { fontMono, fontSans } from "@/config/fonts";
 import { ProductProvider } from "@/contexts/products";
 import { SidebarProvider } from "@/contexts/sidebar";
 import { TeamProvider } from "@/contexts/team";
 import { UserProvider } from "@/contexts/user";
 import "@/styles/globals.css";
+import { ToastProvider } from "@heroui/react";
+import { HeroUIProvider } from "@heroui/system";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { useRouter } from "next/router";
+
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();

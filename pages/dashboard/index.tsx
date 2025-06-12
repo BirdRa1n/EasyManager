@@ -1,7 +1,7 @@
 "use client";
-import Home from "@/constants/dashboard/home";
-import Products from "@/constants/dashboard/products";
-import Settings from "@/constants/dashboard/settings";
+import Home from "@/components/dashboard/home";
+import Products from "@/components/dashboard/products";
+import Settings from "@/components/dashboard/settings";
 import { useSidebarContext } from "@/contexts/sidebar";
 import { useUser } from "@/contexts/user";
 import { Layout } from "@/layouts/layout-sidebar";
@@ -37,7 +37,7 @@ export default function DashboardPage() {
 
     const renderer = () => {
         return (
-            <section className="flex flex-col gap-4 p-6 mt-5 py-0 md:py-0">
+            <section className="flex flex-col gap-4 p-2 mt-5 py-0 md:py-0">
                 <div style={{ display: sidebarActiveItem === "home" ? "block" : "none" }}>
                     <Home />
                 </div>

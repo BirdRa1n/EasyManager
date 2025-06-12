@@ -35,6 +35,29 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [team?.id, fetchProducts]);
 
+    useEffect(() => {
+        const handleInsertsRequests = async (payload: any) => {
+            const newRequest = payload?.new;
+            if (!newRequest) return;
+
+            console.log("New request:", newRequest);
+        };
+
+        const subscription = supabase
+            .channel(`products-${team?.id}`)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'products',
+                filter: `team_id=eq.${team?.id}`
+            }, handleInsertsRequests)
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(subscription);
+        };
+    }, [team]);
+
     const contextValue = useMemo(
         () => ({
             products,
