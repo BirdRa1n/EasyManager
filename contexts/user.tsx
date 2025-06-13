@@ -8,7 +8,8 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 interface UserContextType {
     user?: User;
     error?: string;
-    setUser: (user: User) => void;
+    loading: boolean;
+    setUser: (user: User | undefined) => void;
     signOut: () => Promise<void>;
     fetchUser: () => Promise<void>;
     syncLocalData: () => Promise<void>;
@@ -17,11 +18,13 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<User>();
+    const [user, setUser] = useState<User | undefined>();
     const [error, setError] = useState<string>("");
+    const [loading, setLoading] = useState<boolean>(false);
     const router = useRouter();
 
     const fetchUser = useCallback(async () => {
+        setLoading(true);
         try {
             const { data, error } = await supabase.auth.getUser();
             if (error) throw error;
@@ -30,6 +33,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         } catch (error: any) {
             console.error("Error fetching user:", error.message);
             setError(error.message);
+        } finally {
+            setLoading(false);
         }
     }, []);
 
@@ -47,34 +52,50 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }, [router]);
 
     const syncLocalData = useCallback(async () => {
+        setLoading(true);
         try {
             const storedUser = localStorage.getItem("user");
-
             if (storedUser) {
                 setUser(JSON.parse(storedUser));
             }
-            // Sempre buscar dados atualizados do servidor para garantir consistência
             await fetchUser();
         } catch (error: any) {
             console.error("Error syncing local data:", error.message);
             setError(error.message);
+        } finally {
+            setLoading(false);
         }
     }, [fetchUser]);
 
     useEffect(() => {
         syncLocalData();
-    }, []); // Executa apenas uma vez no carregamento inicial
+
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+                setUser(session?.user || undefined);
+                localStorage.setItem("user", JSON.stringify(session?.user));
+            } else if (event === "SIGNED_OUT") {
+                setUser(undefined);
+                localStorage.removeItem("user");
+            }
+        });
+
+        return () => {
+            authListener.subscription.unsubscribe();
+        };
+    }, [syncLocalData]);
 
     const contextValue = useMemo(
         () => ({
             user,
-            setUser,
             error,
+            loading,
+            setUser,
             signOut,
             fetchUser,
             syncLocalData,
         }),
-        [user, error, signOut, fetchUser, syncLocalData],
+        [user, error, loading, signOut, fetchUser, syncLocalData],
     );
 
     return (

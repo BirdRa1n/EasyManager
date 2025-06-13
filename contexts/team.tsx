@@ -1,7 +1,8 @@
 "use client";
 
 import { supabase } from "@/supabase/client";
-import Store from "@/types/team/store";
+import Store from "@/types/store";
+import TeamMember from "@/types/team-member";
 import { addToast, Button, Form, Input, Modal, ModalBody, ModalContent, ModalHeader, useDisclosure } from "@heroui/react";
 import axios from "axios";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -9,9 +10,10 @@ import { useUser } from "./user";
 
 interface TeamContextType {
     team?: any;
-    members?: any;
+    members?: TeamMember[];
     stores: Store[];
     error?: string;
+    loading: boolean;
     setTeam: (team: any) => void;
     fetchTeam: () => Promise<void>;
     createTeam: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
@@ -22,17 +24,19 @@ const TeamContext = createContext<TeamContextType | undefined>(undefined);
 export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure();
     const [team, setTeam] = useState<any>();
-    const [members, setMembers] = useState<any>([]);
-    const [stores, setStores] = useState<any>([]);
+    const [members, setMembers] = useState<any[]>([]);
+    const [stores, setStores] = useState<Store[]>([]);
     const [error, setError] = useState<string>("");
+    const [loading, setLoading] = useState<boolean>(false);
     const { user } = useUser();
 
     const fetchTeam = useCallback(async () => {
+        setLoading(true);
         try {
             const { data, error } = await supabase
                 .from("teams")
                 .select("*")
-                .maybeSingle()
+                .maybeSingle();
 
             if (error) throw error;
 
@@ -47,41 +51,77 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         } catch (error: any) {
             console.error("Error fetching team:", error.message);
             setError(error.message);
+            addToast({
+                title: "Erro",
+                description: error.message,
+                color: "danger",
+                timeout: 3000,
+            });
+        } finally {
+            setLoading(false);
         }
-    }, []);
+    }, [onOpen]);
 
     const fetchMembers = useCallback(async () => {
         try {
-            const { data, error } = await supabase.from("team_members").select("*").eq("team_id", team?.id);
+            if (!team?.id) return;
+            const { data, error } = await supabase.from("team_members").select("*").eq("team_id", team.id);
             if (error) throw error;
-            setMembers(data);
+            setMembers(data || []);
         } catch (error: any) {
             console.error("Error fetching members:", error.message);
             setError(error.message);
+            addToast({
+                title: "Erro",
+                description: error.message,
+                color: "danger",
+                timeout: 3000,
+            });
         }
     }, [team]);
 
     const fetchStores = useCallback(async () => {
         try {
+            if (!team?.id) return;
             const { data, error } = await supabase
                 .from("stores")
-                .select("*, store_address!fk_store(*), store_contacts!fk_store(*)") // ou outro nome
-                .eq("team_id", team?.id);
+                .select("*, store_address!fk_store(*), store_contacts!fk_store(*)")
+                .eq("team_id", team.id);
 
             if (error) throw error;
-            setStores(data);
+            setStores(data || []);
         } catch (error: any) {
             console.error("Error fetching stores:", error.message);
             setError(error.message);
+            addToast({
+                title: "Erro",
+                description: error.message,
+                color: "danger",
+                timeout: 3000,
+            });
         }
     }, [team]);
+
+    useEffect(() => {
+        if (user?.id) {
+            fetchTeam();
+        } else {
+            setTeam(undefined);
+            setMembers([]);
+            setStores([]);
+            localStorage.removeItem("team");
+        }
+    }, [user?.id, fetchTeam]);
 
     useEffect(() => {
         if (team?.id) {
             fetchMembers();
             fetchStores();
+        } else {
+            setMembers([]);
+            setStores([]);
         }
-    }, [team?.id, fetchMembers]);
+    }, [team?.id, fetchMembers, fetchStores]);
 
     const createTeam = useCallback(
         async (e: React.FormEvent<HTMLFormElement>) => {
@@ -139,28 +179,23 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         const storedTeam = localStorage.getItem("team");
         if (storedTeam) {
             setTeam(JSON.parse(storedTeam));
-        }
-    }, []);
-
-    useEffect(() => {
-        if (user?.id) {
             fetchTeam();
         }
-    }, [user?.id, fetchTeam]); // Dependência mais específica
+    }, [fetchTeam]);
 
     const contextValue = useMemo(
         () => ({
             team,
             members,
             stores,
-            setTeam,
             error,
+            loading,
+            setTeam,
             fetchTeam,
             createTeam,
         }),
-        [team, error, fetchTeam, createTeam],
+        [team, members, stores, error, loading, fetchTeam, createTeam],
     );
-
 
     return (
         <TeamContext.Provider value={contextValue}>
@@ -170,7 +205,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                         <>
                             <ModalHeader className="flex flex-col gap-0">
                                 <p className="text-xl font-bold">
-                                    Bem vindo, {team?.name || "Usuário"}
+                                    Bem vindo, {team?.name || user?.email || "Usuário"}
                                 </p>
                                 <p className="text-sm font-medium text-default-500">
                                     Você ainda não possui uma equipe criada. Preencha o formulário abaixo para criar uma equipe.
@@ -185,7 +220,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                                             label="Nome"
                                             labelPlacement="outside"
                                             name="name"
-                                            placeholder="Nome da equipe"
+                                            placeholder="Nome('.')Nome da equipe"
                                             description="Digite o nome válido para sua equipe."
                                             type="text"
                                         />
@@ -210,7 +245,7 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
                                         description="Digite a localização da sua equipe. Ex: São Paulo, SP."
                                         type="text"
                                     />
-                                    <Button type="submit" color="primary" radius="md" className="w-full mt-4">
+                                    <Button type="submit" color="primary" radius="md" className="w-full mt- seksualitas">
                                         Criar Equipe
                                     </Button>
                                 </Form>

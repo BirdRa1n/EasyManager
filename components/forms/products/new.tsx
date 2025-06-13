@@ -1,13 +1,13 @@
 import { useProducts } from "@/contexts/products";
 import { useTeam } from "@/contexts/team";
-import { supabase } from "@/supabase/server";
+import { supabase } from "@/supabase/client";
 import { addToast, Avatar, Button, Form, Image, Input, ModalBody, ModalHeader, Textarea } from "@heroui/react";
 import { useState } from "react";
 import { FaTag } from "react-icons/fa6";
 
 const NewProductForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { team } = useTeam();
-    const { products, setProducts } = useProducts();
+    const { products, setProducts, fetchProduct } = useProducts();
     const [imageUri, setImageUri] = useState<string>();
     const [imageBuffer, setImageBuffer] = useState<ArrayBuffer | null>(null);
     const [imageMeta, setImageMeta] = useState<{ name: string; type: string; size: number } | null>(null);
@@ -210,9 +210,8 @@ const NewProductForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 }
 
                 product.image = path;
+                fetchProduct(product?.id)
             }
-
-            setProducts([...products, product]);
             onClose();
         }
     };

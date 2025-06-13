@@ -142,19 +142,7 @@ const columns = [
     { name: "OPÇÕES", uid: "actions" },
 ];
 
-interface StoreProduct {
-    price?: number;
-    stock?: number;
-    stores?: { name: string };
-}
-
-interface Product {
-    id: string;
-    name: string;
-    description: string;
-    store_products: StoreProduct[];
-    image?: string;
-}
+import Product from "@/types/products";
 
 export default function ProductTable() {
     const [filterValue, setFilterValue] = React.useState("");
@@ -170,7 +158,7 @@ export default function ProductTable() {
     const [page, setPage] = React.useState(1);
     const [error, setError] = useState<string | null>(null);
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
-    const { products } = useProducts();
+    const { products, setSelectedProduct } = useProducts();
 
     const hasSearchFilter = Boolean(filterValue);
 
@@ -201,11 +189,11 @@ export default function ProductTable() {
         return [...items].sort((a: Product, b: Product) => {
             let first, second;
             if (sortDescriptor.column === "price") {
-                first = a.store_products[0]?.price || 0;
-                second = b.store_products[0]?.price || 0;
+                first = a.store_products?.[0]?.price || 0;
+                second = b.store_products?.[0]?.price || 0;
             } else if (sortDescriptor.column === "stock") {
-                first = a.store_products.reduce((sum, sp) => sum + (sp.stock || 0), 0);
-                second = b.store_products.reduce((sum, sp) => sum + (sp.stock || 0), 0);
+                first = (a.store_products || []).reduce((sum, sp) => sum + (sp.stock || 0), 0);
+                second = (b.store_products || []).reduce((sum, sp) => sum + (sp.stock || 0), 0);
             } else {
                 first = a[sortDescriptor.column as keyof Product] as string;
                 second = b[sortDescriptor.column as keyof Product] as string;
@@ -236,8 +224,7 @@ export default function ProductTable() {
                                 }}
                                 icon={<FaTags className="text-default-200" />}
                             />
-                        )
-                        }
+                        )}
                         <p className={`text-bold text-small line-clamp-2 overflow-hidden text-ellipsis ${!product.image ? 'ml-1' : ''}`}>
                             {product.name}
                         </p>
@@ -252,15 +239,16 @@ export default function ProductTable() {
                     </div>
                 );
             case "price":
+                const price = product.store_products?.[0]?.price;
                 return (
                     <p className="text-small">
-                        {product.store_products[0]?.price
-                            ? `R$ ${product.store_products[0].price.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        {price
+                            ? `R$ ${price.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                             : "N/A"}
                     </p>
                 );
             case "stock":
-                const totalStock = product.store_products.reduce((sum, sp) => sum + (sp.stock || 0), 0);
+                const totalStock = (product.store_products || []).reduce((sum, sp) => sum + (sp.stock || 0), 0);
                 return (
                     <Chip
                         className="capitalize"
@@ -458,7 +446,7 @@ export default function ProductTable() {
                 </TableHeader>
                 <TableBody emptyContent={"Nenhum produto encontrado"} items={sortedItems}>
                     {(item) => (
-                        <TableRow key={item.id}>
+                        <TableRow key={item.id} onClick={() => setSelectedProduct(item)}>
                             {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
                         </TableRow>
                     )}
