@@ -2,12 +2,16 @@ import { useServices } from '@/contexts/services';
 import { useTeam } from '@/contexts/team';
 import { supabase } from '@/supabase/client';
 import { ServiceType, Store } from '@/types/services';
-import { addToast, Button, Card, CardBody, CardFooter, Image, Input, Select, SelectItem, Textarea } from '@heroui/react';
+import { addToast, Button, Card, CardBody, CardFooter, Image, Input, Select, SelectItem, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Textarea } from '@heroui/react';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState } from 'react';
-import { NumericFormat } from 'react-number-format';
 
 const ServiceTable = dynamic(() => import('./table'), { ssr: false });
+
+interface CustomAttribute {
+    key: string;
+    value: string;
+}
 
 interface FormDataType {
     name: string;
@@ -16,7 +20,7 @@ interface FormDataType {
     price: number | null;
     duration: string | null;
     store_id: string | null;
-    custom_attributes: string;
+    custom_attributes: CustomAttribute[];
     attachments: { file: string | File; type: string }[];
     status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
 }
@@ -37,6 +41,18 @@ export default function Services() {
     // Initialize formData when selectedService changes
     useEffect(() => {
         if (selectedService) {
+            let customAttributes: CustomAttribute[] = [];
+            if (selectedService.custom_attributes) {
+                try {
+                    const parsed = selectedService.custom_attributes as Record<string, unknown>;
+                    customAttributes = Object.entries(parsed).map(([key, value]) => ({
+                        key,
+                        value: String(value),
+                    }));
+                } catch {
+                    console.warn('Invalid custom_attributes format');
+                }
+            }
             setFormData({
                 name: selectedService.name,
                 description: selectedService.description ?? '',
@@ -44,7 +60,7 @@ export default function Services() {
                 price: selectedService.price ?? null,
                 duration: selectedService.duration ?? null,
                 store_id: selectedService.store_id ?? null,
-                custom_attributes: selectedService.custom_attributes ? JSON.stringify(selectedService.custom_attributes, null, 2) : '',
+                custom_attributes: customAttributes,
                 attachments: selectedService.attachments?.map((a) => ({ file: a.file, type: a.type })) ?? [],
                 status: selectedService.status,
             });
@@ -61,6 +77,18 @@ export default function Services() {
             return;
         }
 
+        const selectedCustomAttrs = selectedService.custom_attributes
+            ? Object.entries(selectedService.custom_attributes).reduce((acc, [key, value]) => {
+                acc[key] = String(value);
+                return acc;
+            }, {} as Record<string, string>)
+            : {};
+
+        const formCustomAttrs = formData.custom_attributes.reduce((acc, attr) => {
+            acc[attr.key] = attr.value;
+            return acc;
+        }, {} as Record<string, string>);
+
         const hasChanges =
             formData.name !== selectedService.name ||
             formData.description !== (selectedService.description ?? '') ||
@@ -68,7 +96,7 @@ export default function Services() {
             formData.price !== (selectedService.price ?? null) ||
             formData.duration !== (selectedService.duration ?? null) ||
             formData.store_id !== (selectedService.store_id ?? null) ||
-            formData.custom_attributes !== (selectedService.custom_attributes ? JSON.stringify(selectedService.custom_attributes, null, 2) : '') ||
+            JSON.stringify(formCustomAttrs) !== JSON.stringify(selectedCustomAttrs) ||
             formData.status !== selectedService.status ||
             formData.attachments.length !== (selectedService.attachments?.length ?? 0) ||
             formData.attachments.some((a, i) => {
@@ -144,20 +172,32 @@ export default function Services() {
             return;
         }
 
-        let parsedCustomAttributes: Record<string, unknown> | null = null;
-        if (formData.custom_attributes) {
-            try {
-                parsedCustomAttributes = JSON.parse(formData.custom_attributes);
-            } catch {
-                addToast({
-                    title: "Erro",
-                    description: "Os atributos personalizados devem ser um JSON válido.",
-                    color: "danger",
-                    timeout: 3000,
-                });
-                return;
-            }
+        // Validate custom attributes
+        const customAttrKeys = new Set(formData.custom_attributes.map((attr) => attr.key));
+        if (customAttrKeys.size !== formData.custom_attributes.length) {
+            addToast({
+                title: "Erro",
+                description: "As chaves dos atributos personalizados devem ser únicas.",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
         }
+
+        if (formData.custom_attributes.some((attr) => !attr.key.trim())) {
+            addToast({
+                title: "Erro",
+                description: "As chaves dos atributos personalizados não podem estar vazias.",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
+        }
+
+        const parsedCustomAttributes: Record<string, string> = formData.custom_attributes.reduce((acc, attr) => {
+            acc[attr.key] = attr.value;
+            return acc;
+        }, {} as Record<string, string>);
 
         // Handle attachments
         const attachmentData: { file: string; type: string }[] = [];
@@ -216,11 +256,11 @@ export default function Services() {
             await updateService(selectedService.id, {
                 name: formData.name,
                 description: formData.description || '',
-                type: formData.type_id,
+                type: formData.type_id || '',
                 price: formData.price || 0,
                 duration: formData.duration || '',
                 store_id: formData.store_id || '',
-                custom_attributes: parsedCustomAttributes,
+                custom_attributes: Object.keys(parsedCustomAttributes).length ? parsedCustomAttributes : null,
                 attachments: attachmentData,
                 status: formData.status,
             });
@@ -283,6 +323,41 @@ export default function Services() {
         });
     };
 
+    // Update custom attribute
+    const updateCustomAttribute = (index: number, field: 'key' | 'value', value: string) => {
+        setFormData((prev) => {
+            if (!prev) return null;
+            const updatedAttrs = [...prev.custom_attributes];
+            updatedAttrs[index] = { ...updatedAttrs[index], [field]: value };
+            return { ...prev, custom_attributes: updatedAttrs };
+        });
+    };
+
+    // Add custom attribute
+    const addCustomAttribute = () => {
+        setFormData((prev) => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                custom_attributes: [
+                    ...prev.custom_attributes,
+                    { key: ``, value: '' },
+                ],
+            };
+        });
+    };
+
+    // Remove custom attribute
+    const removeCustomAttribute = (index: number) => {
+        setFormData((prev) => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                custom_attributes: prev.custom_attributes.filter((_, i) => i !== index),
+            };
+        });
+    };
+
     if (!selectedService || !formData) {
         return (
             <div className="w-full flex flex-col p-5">
@@ -304,12 +379,15 @@ export default function Services() {
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 description="Nome exibido para o serviço"
+                                isRequired
+                                aria-label="Nome do serviço"
                             />
                             <Textarea
                                 label="Descrição"
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 description="Texto descritivo visível aos clientes"
+                                aria-label="Descrição do serviço"
                             />
                             <Select
                                 label="Tipo de Serviço"
@@ -320,6 +398,8 @@ export default function Services() {
                                 }}
                                 description="Selecione o tipo de serviço"
                                 items={serviceTypes}
+                                isRequired
+                                aria-label="Tipo de serviço"
                             >
                                 {(type: ServiceType) => (
                                     <SelectItem key={type.id}>
@@ -333,24 +413,25 @@ export default function Services() {
                                 onChange={(e) => setFormData({ ...formData, duration: e.target.value || null })}
                                 description="Duração estimada do serviço (ex: 1 hora)"
                                 placeholder="1 hora"
+                                aria-label="Duração do serviço"
                             />
                         </div>
                         <div>
                             <h2 className="text-2xl font-bold mb-4 p-2">Detalhes do Serviço</h2>
-                            <NumericFormat
-                                customInput={Input}
+                            <Input
                                 label="Preço"
-                                thousandSeparator="."
-                                decimalSeparator=","
-                                fixedDecimalScale={true}
-                                decimalScale={2}
-                                prefix="R$ "
-                                value={formData.price ?? ''}
-                                onValueChange={(values) => {
-                                    setFormData({ ...formData, price: values.floatValue ?? null });
+                                type="number"
+                                value={formData.price !== null ? String(formData.price) : ''}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setFormData({ ...formData, price: value ? Number(value) : null });
                                 }}
-                                description="Preço do serviço"
-                                placeholder="R$ 0,00"
+                                description="Preço do serviço (em reais)"
+                                placeholder="0,00"
+                                startContent={<span>R$</span>}
+                                step="0.01"
+                                min="0"
+                                aria-label="Preço do serviço"
                             />
                             <Select
                                 label="Loja"
@@ -361,6 +442,7 @@ export default function Services() {
                                 }}
                                 description="Selecione a loja associada (opcional)"
                                 items={[{ id: '', name: 'Nenhuma' }, ...stores]}
+                                aria-label="Loja associada"
                             >
                                 {(item: Store | { id: string; name: string }) => (
                                     <SelectItem key={item.id}>
@@ -377,6 +459,8 @@ export default function Services() {
                                 }}
                                 description="Selecione o status do serviço"
                                 items={statusOptions}
+                                isRequired
+                                aria-label="Status do serviço"
                             >
                                 {(item) => (
                                     <SelectItem key={item.value}>
@@ -384,13 +468,61 @@ export default function Services() {
                                     </SelectItem>
                                 )}
                             </Select>
-                            <Textarea
-                                label="Atributos Personalizados (JSON)"
-                                value={formData.custom_attributes}
-                                onChange={(e) => setFormData({ ...formData, custom_attributes: e.target.value })}
-                                description="Atributos em formato JSON (ex: {'warranty_days': 90})"
-                                placeholder='{"warranty_days": 90}'
-                            />
+                            <div className="mt-4">
+                                <div className='flex justify-between items-center mb-2'>
+                                    <h3 className="text-lg font-semibold mb-2">Anotações Personalizadas</h3>
+                                    <Button
+                                        size='sm'
+                                        onPress={addCustomAttribute}
+                                        aria-label="Adicionar novo atributo personalizado"
+                                    >
+                                        Adicionar
+                                    </Button>
+                                </div>
+                                {formData.custom_attributes.length > 0 ? (
+                                    <Table aria-label="Atributos personalizados">
+                                        <TableHeader>
+                                            <TableColumn>ETIQUETA</TableColumn>
+                                            <TableColumn>CONTEUDO</TableColumn>
+                                            <TableColumn align="center">AÇÕES</TableColumn>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {formData.custom_attributes?.map((attr, index) => (
+                                                <TableRow key={index}>
+                                                    <TableCell>
+                                                        <Textarea
+                                                            value={attr.key}
+                                                            onChange={(e) => updateCustomAttribute(index, 'key', e.target.value)}
+                                                            placeholder="Etiqueta"
+                                                            aria-label={`Título ${index + 1}`}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Textarea
+                                                            value={attr.value}
+                                                            onChange={(e) => updateCustomAttribute(index, 'value', e.target.value)}
+                                                            placeholder="Valor"
+                                                            aria-label={`Valor do atributo ${index + 1}`}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="flex justify-center">
+                                                        <Button
+                                                            size="sm"
+                                                            color="danger"
+                                                            onPress={() => removeCustomAttribute(index)}
+                                                            aria-label={`Remover atributo ${index + 1}`}
+                                                        >
+                                                            Remover
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                ) : (
+                                    <p className="text-small text-default-400">Nenhum anotação personalizada adicionada.</p>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="mt-5">
@@ -401,42 +533,74 @@ export default function Services() {
                             multiple
                             description="Adicione arquivos JPEG, PNG ou PDF (máx. 5MB por arquivo)"
                             onChange={handleAttachmentChange}
+                            aria-label="Selecionar anexos"
                         />
                         {formData.attachments.length > 0 && (
                             <div className="mt-4">
-                                <p className="text-small text-default-500">Anexos:</p>
-                                <div className="grid grid-cols-3 gap-4">
-                                    {formData.attachments.map((attachment, index) => (
-                                        <div key={index} className="flex flex-col items-center">
-                                            {typeof attachment.file === 'string' && attachment.type === 'image' ? (
-                                                <Image
-                                                    src={attachment.file}
-                                                    alt={`Anexo ${index}`}
-                                                    className="max-w-[100px] max-h-[100px] rounded-md"
-                                                />
-                                            ) : (
-                                                <a
-                                                    href={typeof attachment.file === 'string' ? attachment.file : '#'}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-500 underline"
-                                                >
-                                                    {typeof attachment.file === 'string'
-                                                        ? attachment.file.split('/').pop()
-                                                        : (attachment.file as File).name} ({attachment.type})
-                                                </a>
-                                            )}
-                                            <Button
-                                                size="sm"
-                                                color="danger"
-                                                className="mt-2"
-                                                onPress={() => removeAttachment(index)}
-                                            >
-                                                Remover
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
+                                <Table aria-label="Anexos">
+                                    <TableHeader>
+                                        <TableColumn>ARQUIVO</TableColumn>
+                                        <TableColumn>TIPO</TableColumn>
+                                        <TableColumn align="center">AÇÕES</TableColumn>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {formData.attachments.map((attachment, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell>
+                                                    {typeof attachment.file === 'string' ? (
+                                                        attachment.type === 'image' ? (
+                                                            <Image
+                                                                src={attachment.file}
+                                                                alt={`Anexo ${index + 1}`}
+                                                                className="max-w-[100px] max-h-[100px] rounded-md"
+                                                            />
+                                                        ) : (
+                                                            <a
+                                                                href={attachment.file}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-500 underline"
+                                                            >
+                                                                {attachment.file.split('/').pop()}
+                                                            </a>
+                                                        )
+                                                    ) : (
+                                                        attachment.type === 'image' ? (
+                                                            <Image
+                                                                src={URL.createObjectURL(attachment.file)}
+                                                                alt={`Anexo ${index + 1}`}
+                                                                className="max-w-[100px] max-h-[100px] rounded-md"
+                                                            />
+                                                        ) : (
+                                                            (attachment.file as File).name
+                                                        )
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="capitalize">{attachment.type}</TableCell>
+                                                <TableCell className="flex flex-row gap-2 justify-center">
+                                                    <Button
+                                                        size="sm"
+                                                        onPress={() => {
+                                                            const url = typeof attachment.file === 'string' ? attachment.file : URL.createObjectURL(attachment.file);
+                                                            window.open(url, '_blank');
+                                                        }}
+                                                        aria-label={`Visualizar anexo ${index + 1}`}
+                                                    >
+                                                        Visualizar
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        color="danger"
+                                                        onPress={() => removeAttachment(index)}
+                                                        aria-label={`Remover anexo ${index + 1}`}
+                                                    >
+                                                        Remover
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </div>
                         )}
                     </div>
@@ -447,6 +611,18 @@ export default function Services() {
                             radius="md"
                             color="default"
                             onPress={() => {
+                                let customAttributes: CustomAttribute[] = [];
+                                if (selectedService.custom_attributes) {
+                                    try {
+                                        const parsed = selectedService.custom_attributes as Record<string, unknown>;
+                                        customAttributes = Object.entries(parsed).map(([key, value]) => ({
+                                            key,
+                                            value: String(value),
+                                        }));
+                                    } catch {
+                                        console.warn('Invalid custom_attributes format');
+                                    }
+                                }
                                 setFormData({
                                     name: selectedService.name,
                                     description: selectedService.description ?? '',
@@ -454,16 +630,23 @@ export default function Services() {
                                     price: selectedService.price ?? null,
                                     duration: selectedService.duration ?? null,
                                     store_id: selectedService.store_id ?? null,
-                                    custom_attributes: selectedService.custom_attributes ? JSON.stringify(selectedService.custom_attributes, null, 2) : '',
+                                    custom_attributes: customAttributes,
                                     attachments: selectedService.attachments?.map((a) => ({ file: a.file, type: a.type })) ?? [],
                                     status: selectedService.status,
                                 });
                                 setShowSaveButton(false);
                             }}
+                            aria-label="Cancelar alterações"
                         >
                             Cancelar
                         </Button>
-                        <Button radius="md" color="primary" onPress={handleSave} isLoading={loading}>
+                        <Button
+                            radius="md"
+                            color="primary"
+                            onPress={handleSave}
+                            isLoading={loading}
+                            aria-label="Salvar alterações"
+                        >
                             Salvar
                         </Button>
                     </CardFooter>

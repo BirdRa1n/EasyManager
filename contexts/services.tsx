@@ -138,7 +138,7 @@ export const ServicesProvider = ({ children }: { children: ReactNode }) => {
     );
 
     const updateService = useCallback(
-        async (id: string, updates: { name: string; description?: string; type: string; price?: number; duration?: string; store_id?: string; custom_attributes?: any, attachments?: { file: string | File; type: string }[] }) => {
+        async (id: string, updates: { name: string; description?: string; type: string; price?: number; duration?: string; store_id?: string; custom_attributes?: any, attachments?: { file: string | File; type: string }[], status?: 'pending' | 'in_progress' | 'completed' | 'cancelled' }) => {
             setLoading(true);
             try {
                 if (!team?.id) {
@@ -155,7 +155,9 @@ export const ServicesProvider = ({ children }: { children: ReactNode }) => {
                         duration: updates.duration,
                         store_id: updates.store_id,
                         custom_attributes: updates.custom_attributes,
+                        status: updates.status,
                     })
+
                     .eq("id", id)
                     .eq("team_id", team.id)
                     .select("*, stores(id, name)")
