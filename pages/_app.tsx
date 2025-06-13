@@ -2,6 +2,7 @@ import type { AppProps } from "next/app";
 
 import { fontMono, fontSans } from "@/config/fonts";
 import { ProductProvider } from "@/contexts/products";
+import { ServicesProvider } from "@/contexts/services";
 import { SidebarProvider } from "@/contexts/sidebar";
 import { TeamProvider } from "@/contexts/team";
 import { UserProvider } from "@/contexts/user";
@@ -22,8 +23,10 @@ export default function App({ Component, pageProps }: AppProps) {
           <UserProvider>
             <TeamProvider>
               <ProductProvider>
-                <ToastProvider />
-                <Component {...pageProps} />
+                <ServicesProvider>
+                  <ToastProvider />
+                  <Component {...pageProps} />
+                </ServicesProvider>
               </ProductProvider>
             </TeamProvider>
           </UserProvider>

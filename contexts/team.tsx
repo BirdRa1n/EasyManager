@@ -1,7 +1,6 @@
 "use client";
 
 import { supabase } from "@/supabase/client";
-import { Service, ServiceType } from "@/types/services";
 import Store from "@/types/store";
 import TeamMember from "@/types/team-member";
 import { addToast, Button, Form, Input, Modal, ModalBody, ModalContent, ModalHeader, useDisclosure } from "@heroui/react";
@@ -13,8 +12,6 @@ interface TeamContextType {
     team?: any;
     members?: TeamMember[];
     stores: Store[];
-    services: Service[];
-    serviceTypes: ServiceType[];
     error?: string;
     loading: boolean;
     setTeam: (team: any) => void;
@@ -29,8 +26,6 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
     const [team, setTeam] = useState<any>();
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [stores, setStores] = useState<Store[]>([]);
-    const [services, setServices] = useState<Service[]>([]);
-    const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
     const [error, setError] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
     const { user } = useUser();
@@ -107,73 +102,26 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [team]);
 
-    const fetchServiceTypes = useCallback(async () => {
-        try {
-            const { data, error } = await supabase
-                .from("service_types")
-                .select("*");
-
-            if (error) throw error;
-            setServiceTypes(data || []);
-        } catch (error: any) {
-            console.error("Error fetching service types:", error.message);
-            setError(error.message);
-            addToast({
-                title: "Erro",
-                description: error.message,
-                color: "danger",
-                timeout: 3000,
-            });
-        }
-    }, []);
-
-    const fetchServices = useCallback(async () => {
-        try {
-            if (!team?.id) return;
-            const { data, error } = await supabase
-                .from("services")
-                .select("*")
-                .eq("team_id", team.id);
-
-            if (error) throw error;
-            setServices(data || []);
-        } catch (error: any) {
-            console.error("Error fetching services:", error.message);
-            setError(error.message);
-            addToast({
-                title: "Erro",
-                description: error.message,
-                color: "danger",
-                timeout: 3000,
-            });
-        }
-    }, [team]);
-
     useEffect(() => {
         if (user?.id) {
             fetchTeam();
-            fetchServiceTypes();
         } else {
             setTeam(undefined);
             setMembers([]);
             setStores([]);
-            setServices([]);
-            setServiceTypes([]);
             localStorage.removeItem("team");
         }
-    }, [user?.id, fetchTeam, fetchServiceTypes]);
+    }, [user?.id, fetchTeam]);
 
     useEffect(() => {
         if (team?.id) {
             fetchMembers();
             fetchStores();
-            fetchServices();
         } else {
             setMembers([]);
             setStores([]);
-            setServices([]);
         }
-    }, [team?.id, fetchMembers, fetchStores, fetchServices]);
+    }, [team?.id, fetchMembers, fetchStores]);
 
     const createTeam = useCallback(
         async (e: React.FormEvent<HTMLFormElement>) => {
@@ -240,15 +188,13 @@ export const TeamProvider = ({ children }: { children: ReactNode }) => {
             team,
             members,
             stores,
-            services,
-            serviceTypes,
             error,
             loading,
             setTeam,
             fetchTeam,
             createTeam,
         }),
-        [team, members, stores, services, serviceTypes, error, loading, fetchTeam, createTeam],
+        [team, members, stores, error, loading, fetchTeam, createTeam],
     );
 
     return (

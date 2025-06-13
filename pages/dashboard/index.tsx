@@ -1,6 +1,7 @@
 "use client";
 import Home from "@/components/dashboard/home";
 import Products from "@/components/dashboard/products";
+import Services from "@/components/dashboard/services";
 import Settings from "@/components/dashboard/settings";
 import Stores from "@/components/dashboard/stores";
 import { useSidebarContext } from "@/contexts/sidebar";
@@ -47,6 +48,9 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ display: sidebarActiveItem === "stores" ? "block" : "none" }}>
                     <Stores />
+                </div>
+                <div style={{ display: sidebarActiveItem === "services" ? "block" : "none" }}>
+                    <Services />
                 </div>
                 <div style={{ display: sidebarActiveItem === "settings" ? "block" : "none" }}>
                     <Settings />
