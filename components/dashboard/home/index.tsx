@@ -41,7 +41,7 @@ export default function Home() {
                             </div>
                             <p>Membros</p>
                             <p className="text-2xl font-bold">
-                                {members.length || 0}
+                                {(members?.length ?? 0)}
                             </p>
                         </CardBody>
                     </Card>
