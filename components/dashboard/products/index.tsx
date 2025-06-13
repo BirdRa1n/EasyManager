@@ -137,73 +137,77 @@ export default function Products() {
 
             <Card className="w-full flex flex-col mt-10" id="product">
                 <CardBody>
-                    <h2 className="text-2xl font-bold mb-4 p-2">Detalhes do Produto</h2>
-
-                    <div className="w-full flex flex-col justify-center items-center mb-7">
-                        <Image
-                            src={selectedProduct.image}
-                            alt={selectedProduct.name}
-                            className='max-w-[400px] max-h-[400px] rounded-md'
-                            isBlurred
-                            isZoomed
-                        />
-                        <p className="mt-4 text-[10px] text-default-400">Pré-visualização</p>
+                    <div className='mt-5'>
+                        <div className="w-full flex flex-col justify-center items-center mb-7">
+                            <Image
+                                src={selectedProduct.image}
+                                alt={selectedProduct.name}
+                                className='max-w-[400px] max-h-[400px] rounded-md'
+                                isZoomed
+                            />
+                            <p className="mt-4 text-[10px] text-default-400">Pré-visualização</p>
+                        </div>
                     </div>
 
-                    <Input
-                        label="Nome"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        description="Nome exibido na página do produto"
-                    />
+                    <div className='grid grid-cols-2 gap-4'>
+                        <div>
+                            <h2 className="text-2xl font-bold mb-4 p-2">Informações do Produto</h2>
+                            <Input
+                                label="Nome"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                description="Nome exibido na página do produto"
+                            />
+                            <Textarea
+                                label="Descrição"
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                description="Texto descritivo visível aos clientes"
+                            />
+                        </div>
 
-                    <Textarea
-                        label="Descrição"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        description="Texto descritivo visível aos clientes"
-                    />
-
-                    <Tabs aria-label="Store Options">
-                        {stores.map((store) => {
-                            const storeProduct = formData.store_products.find((sp) => sp.store_id === store.id) || {
-                                store_id: store.id,
-                                price: 0,
-                                stock: 0,
-                            };
-                            return (
-                                <Tab key={store.id} title={store.name}>
-                                    <Card>
-                                        <CardBody>
-                                            <NumericFormat
-                                                customInput={Input}
-                                                label="Preço"
-                                                thousandSeparator="."
-                                                decimalSeparator=","
-                                                fixedDecimalScale={true}
-                                                decimalScale={2}
-                                                prefix="R$ "
-                                                value={storeProduct.price}
-                                                onValueChange={(values) => {
-                                                    updateStoreProduct(store.id, 'price', values.floatValue ?? 0);
-                                                }}
-                                                description="Preço do produto nesta loja"
-                                                placeholder="R$ 0,00"
-                                            />
-                                            <Input
-                                                label="Estoque"
-                                                type="number"
-                                                value={storeProduct.stock !== 0 ? storeProduct.stock.toString() : ''}
-                                                onChange={(e) => updateStoreProduct(store.id, 'stock', e.target.value)}
-                                                description="Quantidade disponível nesta loja"
-                                                placeholder="0"
-                                            />
-                                        </CardBody>
-                                    </Card>
-                                </Tab>
-                            );
-                        })}
-                    </Tabs>
+                        <div>
+                            <h2 className="text-2xl font-bold mb-4 p-2">Preços e Estoque</h2>
+                            <Tabs aria-label="Store Options">
+                                {stores.map((store) => {
+                                    const storeProduct = formData.store_products.find((sp) => sp.store_id === store.id) || {
+                                        store_id: store.id,
+                                        price: 0,
+                                        stock: 0,
+                                    };
+                                    return (
+                                        <Tab key={store.id} title={store.name}>
+                                            <div>
+                                                <NumericFormat
+                                                    customInput={Input}
+                                                    label="Preço"
+                                                    thousandSeparator="."
+                                                    decimalSeparator=","
+                                                    fixedDecimalScale={true}
+                                                    decimalScale={2}
+                                                    prefix="R$ "
+                                                    value={storeProduct.price}
+                                                    onValueChange={(values) => {
+                                                        updateStoreProduct(store.id, 'price', values.floatValue ?? 0);
+                                                    }}
+                                                    description="Preço do produto nesta loja"
+                                                    placeholder="R$ 0,00"
+                                                />
+                                                <Input
+                                                    label="Estoque"
+                                                    type="number"
+                                                    value={storeProduct.stock !== 0 ? storeProduct.stock.toString() : ''}
+                                                    onChange={(e) => updateStoreProduct(store.id, 'stock', e.target.value)}
+                                                    description="Quantidade disponível nesta loja"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        </Tab>
+                                    );
+                                })}
+                            </Tabs>
+                        </div>
+                    </div>
                 </CardBody>
 
                 {showSaveButton && (

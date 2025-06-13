@@ -224,7 +224,7 @@ const NewProductForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <Form onSubmit={handlerSubmit} className="flex flex-col gap-2 w-full">
                         <div className="w-full flex justify-center">
                             {imageUri ? (
-                                <Image src={imageUri} alt="Product Image" className="rounded-md max-w-[200px]" isBlurred isZoomed />
+                                <Image src={imageUri} alt="Product Image" className="rounded-md max-w-[200px]" isZoomed />
                             ) : (
                                 <div className="flex flex-col items-center gap-2">
                                     <Avatar
