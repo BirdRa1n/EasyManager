@@ -2,6 +2,7 @@
 import Home from "@/components/dashboard/home";
 import Products from "@/components/dashboard/products";
 import Settings from "@/components/dashboard/settings";
+import Stores from "@/components/dashboard/stores";
 import { useSidebarContext } from "@/contexts/sidebar";
 import { useUser } from "@/contexts/user";
 import { Layout } from "@/layouts/layout-sidebar";
@@ -43,6 +44,9 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ display: sidebarActiveItem === "products" ? "block" : "none" }}>
                     <Products />
+                </div>
+                <div style={{ display: sidebarActiveItem === "stores" ? "block" : "none" }}>
+                    <Stores />
                 </div>
                 <div style={{ display: sidebarActiveItem === "settings" ? "block" : "none" }}>
                     <Settings />

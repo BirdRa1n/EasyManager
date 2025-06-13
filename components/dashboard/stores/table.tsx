@@ -1,13 +1,11 @@
-import { useProducts } from "@/contexts/products";
+import { useTeam } from "@/contexts/team";
 import {
-    Avatar,
     Button,
     Chip,
     Dropdown,
     DropdownItem,
     DropdownMenu,
     DropdownTrigger,
-    Image,
     Input,
     Pagination,
     Selection,
@@ -17,14 +15,9 @@ import {
     TableCell,
     TableColumn,
     TableHeader,
-    TableRow,
-    useDisclosure
+    TableRow
 } from "@heroui/react";
-import React, { SVGProps, useState } from "react";
-
-import NewProductForm from "@/components/forms/products/new";
-import { Modal, ModalContent } from "@heroui/react";
-import { FaTags } from "react-icons/fa6";
+import React, { SVGProps } from "react";
 
 export type IconSvgProps = SVGProps<SVGSVGElement> & {
     size?: number;
@@ -133,34 +126,30 @@ export const ChevronDownIcon = ({ strokeWidth = 1.5, ...otherProps }: IconSvgPro
         </svg>
     );
 };
-
 const columns = [
-    { name: "PRODUTO", uid: "name", sortable: true },
-    { name: "DESCRIÇÃO", uid: "description", sortable: true },
-    { name: "PREÇO", uid: "price", sortable: true },
-    { name: "ESTOQUE", uid: "stock", sortable: true },
+    { name: "NOME", uid: "name", sortable: true },
+    { name: "CIDADE", uid: "city" },
+    { name: "ESTADO", uid: "state" },
+    { name: "CEP", uid: "zip_code" },
+    { name: "ENDEREÇO", uid: "address" },
+    { name: "TELEFONE", uid: "phone" },
     { name: "OPÇÕES", uid: "actions" },
 ];
 
-interface StoreProduct {
-    price?: number;
-    stock?: number;
-    stores?: { name: string };
-}
-
-interface Product {
+type Store = {
     id: string;
     name: string;
-    description: string;
-    store_products: StoreProduct[];
-    image?: string;
-}
+    location: string;
+    store_address: { city: string; state: string; address: string; zip_code: string }[];
+    store_contacts: { type: string; value: string }[];
+};
 
-export default function ProductTable() {
+export default function TableStores() {
+    const { stores } = useTeam();
     const [filterValue, setFilterValue] = React.useState("");
     const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
     const [visibleColumns, setVisibleColumns] = React.useState<Selection>(
-        new Set(["name", "description", "price", "stock", "actions"])
+        new Set(["name", "city", "address", "zip_code", "state", "actions"]),
     );
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
     const [sortDescriptor, setSortDescriptor] = React.useState<SortDescriptor>({
@@ -168,9 +157,6 @@ export default function ProductTable() {
         direction: "ascending",
     });
     const [page, setPage] = React.useState(1);
-    const [error, setError] = useState<string | null>(null);
-    const { isOpen, onOpen, onOpenChange } = useDisclosure();
-    const { products } = useProducts();
 
     const hasSearchFilter = Boolean(filterValue);
 
@@ -180,14 +166,14 @@ export default function ProductTable() {
     }, [visibleColumns]);
 
     const filteredItems = React.useMemo(() => {
-        let filteredProducts = [...products];
+        let filteredStores = [...(stores ?? [])];
         if (hasSearchFilter) {
-            filteredProducts = filteredProducts.filter((product) =>
-                product.name.toLowerCase().includes(filterValue.toLowerCase())
+            filteredStores = filteredStores.filter((store) =>
+                store.name.toLowerCase().includes(filterValue.toLowerCase()),
             );
         }
-        return filteredProducts;
-    }, [products, filterValue]);
+        return filteredStores;
+    }, [stores, filterValue]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage) || 1;
 
@@ -198,77 +184,70 @@ export default function ProductTable() {
     }, [page, filteredItems, rowsPerPage]);
 
     const sortedItems = React.useMemo(() => {
-        return [...items].sort((a: Product, b: Product) => {
-            let first, second;
-            if (sortDescriptor.column === "price") {
-                first = a.store_products[0]?.price || 0;
-                second = b.store_products[0]?.price || 0;
-            } else if (sortDescriptor.column === "stock") {
-                first = a.store_products.reduce((sum, sp) => sum + (sp.stock || 0), 0);
-                second = b.store_products.reduce((sum, sp) => sum + (sp.stock || 0), 0);
-            } else {
-                first = a[sortDescriptor.column as keyof Product] as string;
-                second = b[sortDescriptor.column as keyof Product] as string;
-            }
+        return [...items].sort((a: Store, b: Store) => {
+            const first = a[sortDescriptor.column as keyof Store] as string;
+            const second = b[sortDescriptor.column as keyof Store] as string;
             const cmp = first < second ? -1 : first > second ? 1 : 0;
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
     }, [sortDescriptor, items]);
 
-    const renderCell = React.useCallback((product: Product, columnKey: React.Key) => {
+    const renderCell = React.useCallback((store: Store, columnKey: React.Key): React.ReactNode => {
+        const cellValue = store[columnKey as keyof Store];
+
         switch (columnKey) {
             case "name":
                 return (
-                    <div className="flex flex-row gap-2 items-center w-full">
-                        {product.image ? (
-                            <Image
-                                className='bg-default-100 max-w-[120px] max-h-[120px]'
-                                width={60}
-                                radius='sm'
-                                src={`${product?.image}`}
-                            />
-                        ) : (
-                            <Avatar
-                                radius="sm"
-                                classNames={{
-                                    base: "bg-gradient-to-br from-[#FFB457] to-[#FF705B]",
-                                    icon: "text-black/80",
-                                }}
-                                icon={<FaTags className="text-default-200" />}
-                            />
-                        )
-                        }
-                        <p className={`text-bold text-small line-clamp-2 overflow-hidden text-ellipsis ${!product.image ? 'ml-1' : ''}`}>
-                            {product.name}
+                    <div className="flex flex-col">
+                        <p className="text-bold text-small capitalize">
+                            {typeof cellValue === "string"
+                                ? cellValue
+                                : Array.isArray(cellValue) && cellValue.length > 0 && typeof cellValue[0] === "object" && "city" in cellValue[0]
+                                    ? cellValue.map((addr: any) => addr.city).join(", ")
+                                    : ""}
                         </p>
                     </div>
                 );
-            case "description":
+            case "location":
                 return (
-                    <div className="flex flex-row gap-1 items-start w-full">
-                        <p className="text-small text-default-400 line-clamp-3 overflow-hidden text-ellipsis">
-                            {product.description}
+                    <div className="flex flex-col">
+                        <p className="text-bold text-small capitalize">
+                            {typeof cellValue === "string"
+                                ? cellValue
+                                : Array.isArray(cellValue) && cellValue.length > 0 && typeof cellValue[0] === "object" && "city" in cellValue[0]
+                                    ? cellValue.map((addr: any) => addr.city).join(", ")
+                                    : ""}
                         </p>
                     </div>
                 );
-            case "price":
+            case "zip_code":
                 return (
-                    <p className="text-small">
-                        {product.store_products[0]?.price
-                            ? `R$ ${product.store_products[0].price.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                            : "N/A"}
-                    </p>
+                    <div className="flex flex-col">
+                        <p className="text-bold text-small">{store.store_address[0]?.zip_code ?? ""}</p>
+                    </div>
+                )
+            case "city":
+                return (
+                    <div className="flex flex-col">
+                        <p className="text-bold text-small">{store.store_address[0]?.city ?? ""}</p>
+                    </div>
                 );
-            case "stock":
-                const totalStock = product.store_products.reduce((sum, sp) => sum + (sp.stock || 0), 0);
+            case "state":
                 return (
-                    <Chip
-                        className="capitalize"
-                        color={totalStock > 0 ? "success" : "danger"}
-                        size="sm"
-                        variant="flat"
-                    >
-                        {totalStock}
+                    <div className="flex flex-col">
+                        <p className="text-bold text-small">{store.store_address[0]?.state ?? ""}</p>
+                    </div>
+                );
+            case "address":
+                return (
+                    <div className="flex flex-col">
+                        <p className="text-bold text-small">{store.store_address[0]?.address ?? ""}</p>
+                    </div>
+                );
+            case "phone":
+                return (
+                    <Chip className="capitalize" size="sm" variant="flat">
+                        {store.store_contacts.find((contact) => contact.type === "phone")?.value || "N/A"}
                     </Chip>
                 );
             case "actions":
@@ -283,17 +262,17 @@ export default function ProductTable() {
                             <DropdownMenu>
                                 <DropdownItem key="view">Visualizar</DropdownItem>
                                 <DropdownItem key="edit">Editar</DropdownItem>
+                                <DropdownItem key="delete">Excluir</DropdownItem>
                             </DropdownMenu>
                         </Dropdown>
                     </div>
                 );
-            default: {
-                const value = product[columnKey as keyof Product];
-                if (typeof value === "string" || typeof value === "number") {
-                    return value;
+            default:
+                // Ensure only string or ReactNode is returned, never an array/object
+                if (typeof cellValue === "string" || typeof cellValue === "number" || React.isValidElement(cellValue)) {
+                    return cellValue;
                 }
                 return "";
-            }
         }
     }, []);
 
@@ -335,7 +314,7 @@ export default function ProductTable() {
                     <Input
                         isClearable
                         className="w-full sm:max-w-[44%]"
-                        placeholder="Pesquisar..."
+                        placeholder="Buscar por nome..."
                         startContent={<SearchIcon />}
                         value={filterValue}
                         onClear={() => onClear()}
@@ -363,13 +342,13 @@ export default function ProductTable() {
                                 ))}
                             </DropdownMenu>
                         </Dropdown>
-                        <Button color="primary" onPress={onOpen} endContent={<PlusIcon />}>
+                        <Button color="primary" endContent={<PlusIcon />}>
                             Adicionar
                         </Button>
                     </div>
                 </div>
                 <div className="flex justify-between items-center">
-                    <span className="text-default-400 text-small">Total de produtos: {products.length}</span>
+                    <span className="text-default-400 text-small">Lojas: {(stores?.length ?? 0)}</span>
                     <label className="flex items-center text-default-400 text-small">
                         Colunas por página:
                         <select
@@ -384,14 +363,14 @@ export default function ProductTable() {
                 </div>
             </div>
         );
-    }, [filterValue, visibleColumns, onSearchChange, onRowsPerPageChange, products.length, hasSearchFilter]);
+    }, [filterValue, visibleColumns, onSearchChange, onRowsPerPageChange, stores.length, hasSearchFilter]);
 
     const bottomContent = React.useMemo(() => {
         return (
             <div className="py-2 px-2 flex justify-between items-center">
                 <span className="w-[30%] text-small text-default-400">
                     {selectedKeys === "all"
-                        ? "All items selected"
+                        ? "Todos os itens selecionados"
                         : `${selectedKeys.size} de ${filteredItems.length} selecionados`}
                 </span>
                 <Pagination
@@ -415,55 +394,40 @@ export default function ProductTable() {
         );
     }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
 
-    if (error) {
-        return <div className="text-danger">{error}</div>;
-    }
-
     return (
-        <>
-            <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <NewProductForm onClose={onClose} />
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
-            <Table
-                isHeaderSticky
-                aria-label="Product table with custom cells, pagination and sorting"
-                bottomContent={bottomContent}
-                bottomContentPlacement="outside"
-                classNames={{
-                    wrapper: "max-h-[382px]",
-                }}
-                selectedKeys={selectedKeys}
-                sortDescriptor={sortDescriptor}
-                topContent={topContent}
-                topContentPlacement="outside"
-                onSelectionChange={setSelectedKeys}
-                onSortChange={setSortDescriptor}
-            >
-                <TableHeader columns={headerColumns}>
-                    {(column) => (
-                        <TableColumn
-                            key={column.uid}
-                            align={column.uid === "actions" ? "center" : "start"}
-                            allowsSorting={column.sortable}
-                        >
-                            {column.name}
-                        </TableColumn>
-                    )}
-                </TableHeader>
-                <TableBody emptyContent={"Nenhum produto encontrado"} items={sortedItems}>
-                    {(item) => (
-                        <TableRow key={item.id}>
-                            {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
-        </>
+        <Table
+            isHeaderSticky
+            aria-label="Stores table with custom cells, pagination and sorting"
+            bottomContent={bottomContent}
+            bottomContentPlacement="outside"
+            classNames={{
+                wrapper: "max-h-[382px]",
+            }}
+            selectedKeys={selectedKeys}
+            sortDescriptor={sortDescriptor}
+            topContent={topContent}
+            topContentPlacement="outside"
+            onSelectionChange={setSelectedKeys}
+            onSortChange={setSortDescriptor}
+        >
+            <TableHeader columns={headerColumns}>
+                {(column) => (
+                    <TableColumn
+                        key={column.uid}
+                        align={column.uid === "actions" ? "center" : "start"}
+                        allowsSorting={column.sortable}
+                    >
+                        {column.name}
+                    </TableColumn>
+                )}
+            </TableHeader>
+            <TableBody emptyContent={"Nenhuma loja encontrada"} items={sortedItems}>
+                {(item) => (
+                    <TableRow key={item.id}>
+                        {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+                    </TableRow>
+                )}
+            </TableBody>
+        </Table>
     );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/supabase/client";
+import Store from "@/types/team/store";
 import { addToast, Button, Form, Input, Modal, ModalBody, ModalContent, ModalHeader, useDisclosure } from "@heroui/react";
 import axios from "axios";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -9,7 +10,7 @@ import { useUser } from "./user";
 interface TeamContextType {
     team?: any;
     members?: any;
-    stores?: any;
+    stores: Store[];
     error?: string;
     setTeam: (team: any) => void;
     fetchTeam: () => Promise<void>;

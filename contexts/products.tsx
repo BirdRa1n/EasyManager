@@ -56,7 +56,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         return () => {
             supabase.removeChannel(subscription);
         };
-    }, [team]);
+    }, [team?.id]);
 
     const contextValue = useMemo(
         () => ({
