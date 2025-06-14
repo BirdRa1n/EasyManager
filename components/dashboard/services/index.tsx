@@ -369,7 +369,7 @@ export default function Services() {
     return (
         <div className="w-full flex flex-col p-5">
             <ServiceTable />
-            <Card className="w-full flex flex-col mt-10" id="service">
+            <Card className="w-full flex flex-col mt-10" shadow='none' id="service">
                 <CardBody>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -416,6 +416,8 @@ export default function Services() {
                                 aria-label="Duração do serviço"
                             />
                         </div>
+
+
                         <div>
                             <h2 className="text-2xl font-bold mb-4 p-2">Detalhes do Serviço</h2>
                             <Input
@@ -468,61 +470,63 @@ export default function Services() {
                                     </SelectItem>
                                 )}
                             </Select>
-                            <div className="mt-4">
-                                <div className='flex justify-between items-center mb-2'>
-                                    <h3 className="text-lg font-semibold mb-2">Anotações Personalizadas</h3>
-                                    <Button
-                                        size='sm'
-                                        onPress={addCustomAttribute}
-                                        aria-label="Adicionar novo atributo personalizado"
-                                    >
-                                        Adicionar
-                                    </Button>
-                                </div>
-                                {formData.custom_attributes.length > 0 ? (
-                                    <Table aria-label="Atributos personalizados">
-                                        <TableHeader>
-                                            <TableColumn>ETIQUETA</TableColumn>
-                                            <TableColumn>CONTEUDO</TableColumn>
-                                            <TableColumn align="center">AÇÕES</TableColumn>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {formData.custom_attributes?.map((attr, index) => (
-                                                <TableRow key={index}>
-                                                    <TableCell>
-                                                        <Textarea
-                                                            value={attr.key}
-                                                            onChange={(e) => updateCustomAttribute(index, 'key', e.target.value)}
-                                                            placeholder="Etiqueta"
-                                                            aria-label={`Título ${index + 1}`}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Textarea
-                                                            value={attr.value}
-                                                            onChange={(e) => updateCustomAttribute(index, 'value', e.target.value)}
-                                                            placeholder="Valor"
-                                                            aria-label={`Valor do atributo ${index + 1}`}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="flex justify-center">
-                                                        <Button
-                                                            size="sm"
-                                                            color="danger"
-                                                            onPress={() => removeCustomAttribute(index)}
-                                                            aria-label={`Remover atributo ${index + 1}`}
-                                                        >
-                                                            Remover
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                ) : (
-                                    <p className="text-small text-default-400">Nenhum anotação personalizada adicionada.</p>
-                                )}
+
+                        </div>
+
+                        <div className="mt-4">
+                            <div className='flex justify-between items-center mb-2'>
+                                <h2 className="text-2xl font-bold p-2">Anotações Personalizadas</h2>
+                                <Button
+                                    size='sm'
+                                    onPress={addCustomAttribute}
+                                    aria-label="Adicionar novo atributo personalizado"
+                                >
+                                    Adicionar
+                                </Button>
                             </div>
+                            {formData.custom_attributes.length > 0 ? (
+                                <Table aria-label="Atributos personalizados">
+                                    <TableHeader>
+                                        <TableColumn>ETIQUETA</TableColumn>
+                                        <TableColumn>CONTEUDO</TableColumn>
+                                        <TableColumn align="center">AÇÕES</TableColumn>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {formData.custom_attributes?.map((attr, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell>
+                                                    <Textarea
+                                                        value={attr.key}
+                                                        onChange={(e) => updateCustomAttribute(index, 'key', e.target.value)}
+                                                        placeholder="Etiqueta"
+                                                        aria-label={`Título ${index + 1}`}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Textarea
+                                                        value={attr.value}
+                                                        onChange={(e) => updateCustomAttribute(index, 'value', e.target.value)}
+                                                        placeholder="Valor"
+                                                        aria-label={`Valor do atributo ${index + 1}`}
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="flex justify-center">
+                                                    <Button
+                                                        size="sm"
+                                                        color="danger"
+                                                        onPress={() => removeCustomAttribute(index)}
+                                                        aria-label={`Remover atributo ${index + 1}`}
+                                                    >
+                                                        Remover
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : (
+                                <p className="text-small text-default-400">Nenhum anotação personalizada adicionada.</p>
+                            )}
                         </div>
                     </div>
                     <div className="mt-5">

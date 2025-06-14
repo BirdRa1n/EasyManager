@@ -46,7 +46,8 @@ export const ServicesProvider = ({ children }: { children: ReactNode }) => {
         try {
             const { data, error } = await supabase
                 .from("service_types")
-                .select("*");
+                .select("*")
+                .eq("team_id", team?.id);
 
             if (error) throw error;
             setServiceTypes(data || []);
@@ -62,7 +63,7 @@ export const ServicesProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [team]);
 
     const fetchServices = useCallback(async () => {
         setLoading(true);
@@ -198,15 +199,11 @@ export const ServicesProvider = ({ children }: { children: ReactNode }) => {
     );
 
     useEffect(() => {
-        fetchServiceTypes();
-    }, [fetchServiceTypes]);
-
-    useEffect(() => {
         if (!team?.id) {
             setServices([]);
             return;
         }
-
+        fetchServiceTypes();
         fetchServices();
 
         const subscription = supabase
@@ -235,7 +232,7 @@ export const ServicesProvider = ({ children }: { children: ReactNode }) => {
         return () => {
             supabase.removeChannel(subscription);
         };
-    }, [team?.id, fetchServices]);
+    }, [team?.id, fetchServices, fetchServiceTypes]);
 
     const contextValue = useMemo(
         () => ({
