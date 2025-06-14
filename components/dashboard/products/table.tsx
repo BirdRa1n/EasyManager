@@ -269,8 +269,10 @@ export default function ProductTable() {
                                 </Button>
                             </DropdownTrigger>
                             <DropdownMenu>
-                                <DropdownItem key="view">Visualizar</DropdownItem>
-                                <DropdownItem key="edit">Editar</DropdownItem>
+                                <DropdownItem key="view" onPress={() => { setSelectedProduct(product); }}>Visualizar</DropdownItem>
+                                <DropdownItem key="edit" onPress={() => { setSelectedProduct(product); }}>
+                                    Editar
+                                </DropdownItem>
                             </DropdownMenu>
                         </Dropdown>
                     </div>

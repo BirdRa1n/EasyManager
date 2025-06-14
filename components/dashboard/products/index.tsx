@@ -135,7 +135,7 @@ export default function Products() {
         <div className="w-full flex flex-col p-5">
             <ProductTable />
 
-            <Card className="w-full flex flex-col mt-10" id="product">
+            <Card className="w-full flex flex-col mt-10" id="product" shadow='none'>
                 <CardBody>
                     <div className='mt-5'>
                         <div className="w-full flex flex-col justify-center items-center mb-7">

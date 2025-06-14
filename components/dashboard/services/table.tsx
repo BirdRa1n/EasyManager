@@ -262,7 +262,7 @@ export default function ServiceTable() {
                                 </Button>
                             </DropdownTrigger>
                             <DropdownMenu>
-                                <DropdownItem key="view" onPress={() => alert(`Visualizar ${service.id}`)}>
+                                <DropdownItem key="view" onPress={() => setSelectedService(service)}>
                                     Visualizar
                                 </DropdownItem>
                                 <DropdownItem key="edit" onPress={() => setSelectedService(service)}>

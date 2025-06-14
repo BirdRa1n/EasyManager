@@ -266,12 +266,6 @@ export default function Services() {
             });
             setShowSaveButton(false);
             setSelectedService(null);
-            addToast({
-                title: "Sucesso",
-                description: "Serviço atualizado com sucesso.",
-                color: "primary",
-                timeout: 3000,
-            });
         } catch (error: any) {
             console.error("Error saving service:", error);
             addToast({
