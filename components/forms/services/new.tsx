@@ -1,30 +1,53 @@
 import { useServices } from "@/contexts/services";
 import { useTeam } from "@/contexts/team";
 import { supabase } from "@/supabase/client";
-import { addToast, Button, Form, Input, ModalBody, ModalHeader, Select, SelectItem, Textarea } from "@heroui/react";
+import { addToast, Button, Form, Input, ModalBody, ModalHeader, Select, SelectItem, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Textarea } from "@heroui/react";
 import { useState } from "react";
+
+interface CustomAttribute {
+    key: string;
+    value: string;
+}
 
 const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { team, stores } = useTeam();
     const { serviceTypes, services, setServices, fetchService } = useServices();
     const [name, setName] = useState<string>("");
     const [description, setDescription] = useState<string>("");
-    const [typeId, setTypeId] = useState<string>(""); // Changed from type to typeId
+    const [typeId, setTypeId] = useState<string>("");
     const [price, setPrice] = useState<string>("");
     const [duration, setDuration] = useState<string>("");
     const [storeId, setStoreId] = useState<string>("");
-    const [customAttributes, setCustomAttributes] = useState<string>("");
+    const [customAttributes, setCustomAttributes] = useState<CustomAttribute[]>([]);
     const [attachments, setAttachments] = useState<{ file: File; type: string }[]>([]);
+
+    // Add custom attribute
+    const addCustomAttribute = () => {
+        setCustomAttributes([...customAttributes, { key: "", value: "" }]);
+    };
+
+    // Update custom attribute
+    const updateCustomAttribute = (index: number, field: 'key' | 'value', value: string) => {
+        const updatedAttrs = [...customAttributes];
+        updatedAttrs[index] = { ...updatedAttrs[index], [field]: value };
+        setCustomAttributes(updatedAttrs);
+    };
+
+    // Remove custom attribute
+    const removeCustomAttribute = (index: number) => {
+        setCustomAttributes(customAttributes.filter((_, i) => i !== index));
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         const formData = new FormData(e.currentTarget);
         const form = Object.fromEntries(formData);
-        const { name, description, type_id, price, duration, store_id, custom_attributes } = form;
+        const { name, description, type_id, price, duration, store_id } = form;
 
         // Debug: Log FormData and attachments
-        console.log("FormData:", { name, description, type_id, price, duration, store_id, custom_attributes });
+        console.log("FormData:", { name, description, type_id, price, duration, store_id });
+        console.log("Custom Attributes:", customAttributes);
         console.log("Attachments:", attachments.map((a) => ({ name: a.file.name, type: a.type })));
 
         // Validate form fields
@@ -83,21 +106,34 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             return;
         }
 
-        let parsedCustomAttributes: any = null;
-        if (custom_attributes) {
-            try {
-                parsedCustomAttributes = JSON.parse(custom_attributes as string);
-            } catch (error) {
-                addToast({
-                    title: "Erro ao adicionar serviço",
-                    description: "Os atributos personalizados devem ser um JSON válido.",
-                    variant: "solid",
-                    color: "danger",
-                    timeout: 3000,
-                });
-                return;
-            }
+        // Validate custom attributes
+        const customAttrKeys = new Set(customAttributes.map((attr) => attr.key));
+        if (customAttrKeys.size !== customAttributes.length) {
+            addToast({
+                title: "Erro ao adicionar serviço",
+                description: "As chaves dos atributos personalizados devem ser únicas.",
+                variant: "solid",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
         }
+
+        if (customAttributes.some((attr) => !attr.key.trim())) {
+            addToast({
+                title: "Erro ao adicionar serviço",
+                description: "As chaves dos atributos personalizados não podem estar vazias.",
+                variant: "solid",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
+        }
+
+        const parsedCustomAttributes: Record<string, string> = customAttributes.reduce((acc, attr) => {
+            acc[attr.key] = attr.value;
+            return acc;
+        }, {} as Record<string, string>);
 
         if (!team?.id) {
             addToast({
@@ -117,12 +153,12 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         const serviceData = {
             name,
             description,
-            type_id, // Changed from type to type_id
+            type_id,
             team_id: team.id,
             price: price ? Number(price) : null,
             duration: duration || null,
             store_id: store_id || null,
-            custom_attributes: parsedCustomAttributes,
+            custom_attributes: Object.keys(parsedCustomAttributes).length ? parsedCustomAttributes : null,
             created_by: user?.id || null,
             attachments: [] as { file: string; type: string }[],
         };
@@ -151,7 +187,7 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 const attachmentData: { file: string; type: string }[] = [];
                 for (const attachment of attachments) {
                     const { file, type } = attachment;
-                    if (!["image/jpeg", "image/png", "application/pdf"].includes(file.type)) {
+                    if (!["image/jpeg", "image/png", "image/jpg", "image/webp", "image/gif", "application/pdf"].includes(file.type)) {
                         await supabase.from("services").delete().eq("id", service.id);
                         addToast({
                             title: "Erro ao adicionar serviço",
@@ -267,7 +303,7 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 onChange={(e) => setDescription(e.target.value)}
                             />
                             <Select
-                                name="type_id" // Changed from type to type_id
+                                name="type_id"
                                 label="Tipo de serviço"
                                 placeholder="Selecione o tipo"
                                 description="Selecione o tipo de serviço."
@@ -316,16 +352,59 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             </Select>
                         </div>
                         <div className="w-full">
-                            <p className="text-default-600 text-sm mb-2">Atributos personalizados</p>
-                            <Textarea
-                                name="custom_attributes"
-                                label="Atributos personalizados (JSON)"
-                                size="md"
-                                placeholder='Ex: {"device_types": ["iPhone", "Samsung"], "warranty_days": 30}'
-                                description="Digite atributos personalizados em formato JSON (opcional)."
-                                value={customAttributes}
-                                onChange={(e) => setCustomAttributes(e.target.value)}
-                            />
+                            <div className="flex justify-between items-center mb-2">
+                                <p className="text-default-600 text-sm mb-2">Anotações personalizadas</p>
+                                <Button
+                                    size="sm"
+                                    onPress={addCustomAttribute}
+                                    aria-label="Adicionar novo atributo personalizado"
+                                >
+                                    Adicionar
+                                </Button>
+                            </div>
+                            {customAttributes.length > 0 ? (
+                                <Table aria-label="Anotações personalizadas">
+                                    <TableHeader>
+                                        <TableColumn>ETIQUETA</TableColumn>
+                                        <TableColumn>CONTEÚDO</TableColumn>
+                                        <TableColumn align="center">AÇÕES</TableColumn>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {customAttributes.map((attr, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell>
+                                                    <Textarea
+                                                        value={attr.key}
+                                                        onChange={(e) => updateCustomAttribute(index, 'key', e.target.value)}
+                                                        placeholder="Etiqueta"
+                                                        aria-label={`Título ${index + 1}`}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Textarea
+                                                        value={attr.value}
+                                                        onChange={(e) => updateCustomAttribute(index, 'value', e.target.value)}
+                                                        placeholder="Valor"
+                                                        aria-label={`Valor do atributo ${index + 1}`}
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="flex justify-center">
+                                                    <Button
+                                                        size="sm"
+                                                        color="danger"
+                                                        onPress={() => removeCustomAttribute(index)}
+                                                        aria-label={`Remover atributo ${index + 1}`}
+                                                    >
+                                                        Remover
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : (
+                                <p className="text-small text-default-400">Nenhum atributo personalizado adicionado.</p>
+                            )}
                         </div>
                         <div className="w-full">
                             <p className="text-default-600 text-sm mb-2">Anexos</p>
@@ -333,7 +412,7 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 name="attachments"
                                 size="md"
                                 type="file"
-                                accept="image/jpeg,image/png,application/pdf"
+                                accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/jpg,application/pdf"
                                 multiple
                                 description="Selecione arquivos JPEG, PNG ou PDF (máx. 5MB por arquivo)."
                                 onChange={(e) => {
