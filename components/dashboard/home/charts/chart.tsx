@@ -10,14 +10,11 @@ interface AreaChartProps {
 
 export function AreaChart({ options, series }: AreaChartProps) {
     return (
-        <div className="p-4 bg-white rounded-lg shadow-sm">
-            <Chart
-                options={options}
-                series={series}
-                type="area"
-                height={350}
-                width="100%"
-            />
-        </div>
+        <Chart
+            options={options}
+            series={series}
+            type="area"
+            width="100%"
+        />
     );
 }
