@@ -20,6 +20,7 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [storeId, setStoreId] = useState<string>("");
     const [customAttributes, setCustomAttributes] = useState<CustomAttribute[]>([]);
     const [attachments, setAttachments] = useState<{ file: File; type: string }[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
 
     // Add custom attribute
     const addCustomAttribute = () => {
@@ -148,7 +149,6 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         // Debug: Log authenticated user
         const { data: { user } } = await supabase.auth.getUser();
-        console.log("Authenticated user:", user?.id);
 
         const serviceData = {
             name,
@@ -163,116 +163,130 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             attachments: [] as { file: string; type: string }[],
         };
 
-        // Insert service to get ID for attachment storage
-        const { data: service, error: serviceError } = await supabase
-            .from("services")
-            .insert(serviceData)
-            .select("*, service_types!type_id(name), stores(id, name)")
-            .maybeSingle();
+        try {
+            setLoading(true);
+            // Insert service to get ID for attachment storage
+            const { data: service, error: serviceError } = await supabase
+                .from("services")
+                .insert(serviceData)
+                .select("*, service_types!type_id(name), stores(id, name)")
+                .maybeSingle();
 
-        if (serviceError) {
+            if (serviceError) {
+                addToast({
+                    title: "Erro ao adicionar serviço",
+                    description: serviceError.message,
+                    variant: "solid",
+                    color: "danger",
+                    timeout: 3000,
+                });
+                return;
+            }
+
+            if (service) {
+                // Handle attachments
+                if (attachments.length > 0) {
+                    const attachmentData: { file: string; type: string }[] = [];
+                    for (const attachment of attachments) {
+                        const { file, type } = attachment;
+                        if (!["image/jpeg", "image/png", "image/jpg", "image/webp", "image/gif", "application/pdf"].includes(file.type)) {
+                            await supabase.from("services").delete().eq("id", service.id);
+                            addToast({
+                                title: "Erro ao adicionar serviço",
+                                description: `O arquivo ${file.name} deve ser JPEG, PNG ou PDF.`,
+                                variant: "solid",
+                                color: "danger",
+                                timeout: 3000,
+                            });
+                            return;
+                        }
+                        if (file.size > 5 * 1024 * 1024) {
+                            // 5MB limit
+                            await supabase.from("services").delete().eq("id", service.id);
+                            addToast({
+                                title: "Erro ao adicionar serviço",
+                                description: `O arquivo ${file.name} não pode exceder 5MB.`,
+                                variant: "solid",
+                                color: "danger",
+                                timeout: 3000,
+                            });
+                            return;
+                        }
+
+                        const fileExt = file.type.split("/")[1];
+                        const randomName = Math.random().toString(36).substring(2, 15);
+                        const path = `${team.id}/${service.id}/${randomName}.${fileExt}`;
+                        console.log("Uploading attachment to:", path); // Debug
+
+                        const { error: uploadError } = await supabase.storage
+                            .from("services")
+                            .upload(path, file, {
+                                cacheControl: "3600",
+                                upsert: false,
+                                contentType: file.type,
+                            });
+
+                        if (uploadError) {
+                            console.log("Upload error:", { path, error: uploadError });
+                            await supabase.from("services").delete().eq("id", service.id);
+                            addToast({
+                                title: "Erro ao adicionar serviço",
+                                description: uploadError.message,
+                                variant: "solid",
+                                color: "danger",
+                                timeout: 3000,
+                            });
+                            return;
+                        }
+
+                        const { data: { publicUrl } } = supabase.storage.from("services").getPublicUrl(path);
+                        attachmentData.push({ file: publicUrl, type });
+                    }
+
+                    // Update service with attachments
+                    const { error: updateError } = await supabase
+                        .from("services")
+                        .update({ attachments: attachmentData })
+                        .eq("id", service.id);
+
+                    if (updateError) {
+                        console.log("Update error:", updateError);
+                        await supabase.from("services").delete().eq("id", service.id);
+                        addToast({
+                            title: "Erro ao adicionar serviço",
+                            description: updateError.message,
+                            variant: "solid",
+                            color: "danger",
+                            timeout: 3000,
+                        });
+                        return;
+                    }
+
+                    service.attachments = attachmentData;
+                }
+
+                setServices([...services, service]);
+                fetchService(service.id);
+                onClose();
+                addToast({
+                    title: "Sucesso",
+                    description: "Serviço adicionado com sucesso.",
+                    variant: "solid",
+                    color: "primary",
+                    timeout: 3000,
+                });
+            }
+        } catch (error: any) {
+            console.log("Error:", error);
             addToast({
                 title: "Erro ao adicionar serviço",
-                description: serviceError.message,
+                description: error?.message,
                 variant: "solid",
                 color: "danger",
                 timeout: 3000,
             });
-            return;
-        }
-
-        if (service) {
-            // Handle attachments
-            if (attachments.length > 0) {
-                const attachmentData: { file: string; type: string }[] = [];
-                for (const attachment of attachments) {
-                    const { file, type } = attachment;
-                    if (!["image/jpeg", "image/png", "image/jpg", "image/webp", "image/gif", "application/pdf"].includes(file.type)) {
-                        await supabase.from("services").delete().eq("id", service.id);
-                        addToast({
-                            title: "Erro ao adicionar serviço",
-                            description: `O arquivo ${file.name} deve ser JPEG, PNG ou PDF.`,
-                            variant: "solid",
-                            color: "danger",
-                            timeout: 3000,
-                        });
-                        return;
-                    }
-                    if (file.size > 5 * 1024 * 1024) {
-                        // 5MB limit
-                        await supabase.from("services").delete().eq("id", service.id);
-                        addToast({
-                            title: "Erro ao adicionar serviço",
-                            description: `O arquivo ${file.name} não pode exceder 5MB.`,
-                            variant: "solid",
-                            color: "danger",
-                            timeout: 3000,
-                        });
-                        return;
-                    }
-
-                    const fileExt = file.type.split("/")[1];
-                    const randomName = Math.random().toString(36).substring(2, 15);
-                    const path = `${team.id}/${service.id}/${randomName}.${fileExt}`;
-                    console.log("Uploading attachment to:", path); // Debug
-
-                    const { error: uploadError } = await supabase.storage
-                        .from("services")
-                        .upload(path, file, {
-                            cacheControl: "3600",
-                            upsert: false,
-                            contentType: file.type,
-                        });
-
-                    if (uploadError) {
-                        console.log("Upload error:", { path, error: uploadError });
-                        await supabase.from("services").delete().eq("id", service.id);
-                        addToast({
-                            title: "Erro ao adicionar serviço",
-                            description: uploadError.message,
-                            variant: "solid",
-                            color: "danger",
-                            timeout: 3000,
-                        });
-                        return;
-                    }
-
-                    const { data: { publicUrl } } = supabase.storage.from("services").getPublicUrl(path);
-                    attachmentData.push({ file: publicUrl, type });
-                }
-
-                // Update service with attachments
-                const { error: updateError } = await supabase
-                    .from("services")
-                    .update({ attachments: attachmentData })
-                    .eq("id", service.id);
-
-                if (updateError) {
-                    console.log("Update error:", updateError);
-                    await supabase.from("services").delete().eq("id", service.id);
-                    addToast({
-                        title: "Erro ao adicionar serviço",
-                        description: updateError.message,
-                        variant: "solid",
-                        color: "danger",
-                        timeout: 3000,
-                    });
-                    return;
-                }
-
-                service.attachments = attachmentData;
-            }
-
-            setServices([...services, service]);
-            fetchService(service.id);
-            onClose();
-            addToast({
-                title: "Sucesso",
-                description: "Serviço adicionado com sucesso.",
-                variant: "solid",
-                color: "primary",
-                timeout: 3000,
-            });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -452,7 +466,7 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             )}
                         </div>
                         <div className="flex justify-end w-full">
-                            <Button color="primary" type="submit">
+                            <Button color="primary" type="submit" isLoading={loading} isDisabled={loading}>
                                 Adicionar
                             </Button>
                         </div>
