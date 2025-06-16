@@ -1,3 +1,5 @@
+"use client";
+
 import { useServices } from '@/contexts/services';
 import { useTeam } from '@/contexts/team';
 import { supabase } from '@/supabase/client';
@@ -23,6 +25,10 @@ interface FormDataType {
     custom_attributes: CustomAttribute[];
     attachments: { file: string | File; type: string }[];
     status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+    customer_name: string;
+    customer_email: string;
+    customer_phone: string;
+    customer_address: string;
 }
 
 const statusOptions = [
@@ -63,6 +69,10 @@ export default function Services() {
                 custom_attributes: customAttributes,
                 attachments: selectedService.attachments?.map((a) => ({ file: a.file, type: a.type })) ?? [],
                 status: selectedService.status,
+                customer_name: selectedService.service_client?.[0]?.name ?? '',
+                customer_email: selectedService.service_client?.[0]?.email ?? '',
+                customer_phone: selectedService.service_client?.[0]?.phone ?? '',
+                customer_address: selectedService.service_client?.[0]?.address ?? '',
             });
         } else {
             setFormData(null);
@@ -102,7 +112,11 @@ export default function Services() {
             formData.attachments.some((a, i) => {
                 const original = selectedService.attachments?.[i] ?? { file: '', type: '' };
                 return typeof a.file !== 'string' || a.file !== original.file || a.type !== original.type;
-            });
+            }) ||
+            formData.customer_name !== (selectedService.service_client?.[0]?.name ?? '') ||
+            formData.customer_email !== (selectedService.service_client?.[0]?.email ?? '') ||
+            formData.customer_phone !== (selectedService.service_client?.[0]?.phone ?? '') ||
+            formData.customer_address !== (selectedService.service_client?.[0]?.address ?? '');
 
         setShowSaveButton(hasChanges);
     }, [formData, selectedService]);
@@ -166,6 +180,47 @@ export default function Services() {
             addToast({
                 title: "Erro",
                 description: "Selecione uma loja válida.",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
+        }
+
+        // Validate client fields
+        if (formData.customer_name.length < 3) {
+            addToast({
+                title: "Erro",
+                description: "O nome do cliente deve ter pelo menos 3 caracteres.",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customer_email)) {
+            addToast({
+                title: "Erro",
+                description: "Digite um email válido para o cliente.",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
+        }
+
+        if (formData.customer_phone.length < 10) {
+            addToast({
+                title: "Erro",
+                description: "O telefone do cliente deve ter pelo menos 10 caracteres.",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
+        }
+
+        if (formData.customer_address.length < 5) {
+            addToast({
+                title: "Erro",
+                description: "O endereço do cliente deve ter pelo menos 5 caracteres.",
                 color: "danger",
                 timeout: 3000,
             });
@@ -253,6 +308,7 @@ export default function Services() {
         }
 
         try {
+            // Update service
             await updateService(selectedService.id, {
                 name: formData.name,
                 description: formData.description || '',
@@ -264,18 +320,54 @@ export default function Services() {
                 attachments: attachmentData,
                 status: formData.status,
             });
+
+            // Update client data
+            if (selectedService.service_client?.[0]?.id) {
+                const { error: clientError } = await supabase
+                    .from('service_client')
+                    .update({
+                        name: formData.customer_name,
+                        email: formData.customer_email,
+                        phone: formData.customer_phone,
+                        address: formData.customer_address,
+                    })
+                    .eq('id', selectedService.service_client[0].id)
+                    .eq('team_id', team.id);
+
+                if (clientError) {
+                    throw new Error(`Erro ao atualizar dados do cliente: ${clientError.message}`);
+                }
+            } else {
+                // Insert new client data if none exists
+                const clientData = {
+                    name: formData.customer_name,
+                    email: formData.customer_email,
+                    phone: formData.customer_phone,
+                    address: formData.customer_address,
+                    team_id: team.id,
+                    service_id: selectedService.id,
+                    created_at: new Date().toISOString(),
+                };
+                const { error: clientError } = await supabase
+                    .from('service_client')
+                    .insert(clientData);
+
+                if (clientError) {
+                    throw new Error(`Erro ao adicionar dados do cliente: ${clientError.message}`);
+                }
+            }
+
             setShowSaveButton(false);
             setSelectedService(null);
         } catch (error: any) {
-            console.error("Error saving service:", error);
+            console.error("Error saving service or client:", error);
             addToast({
                 title: "Erro",
-                description: error.message || "Erro ao salvar o serviço.",
+                description: error.message || "Erro ao salvar o serviço ou dados do cliente.",
                 color: "danger",
                 timeout: 3000,
             });
-        }
-        finally {
+        } finally {
             setFormData(null);
             setSelectedService(null);
         }
@@ -300,7 +392,7 @@ export default function Services() {
             return {
                 ...prev,
                 attachments: [
-                    ...prev.attachments.filter((a) => typeof a.file === 'string'),
+                    ...prev.attachments,
                     ...validFiles.map((file) => ({
                         file,
                         type: file.type.startsWith('image') ? 'image' : 'pdf',
@@ -468,40 +560,40 @@ export default function Services() {
                             </Select>
                         </div>
 
-                        <div className="">
-                            {selectedService.service_client && selectedService.service_client.length > 0 && (
-                                <div className="mt-4">
-                                    <h2 className="text-2xl font-bold mb-4 p-2">Informações do Cliente</h2>
-                                    <Input
-                                        label="Nome do Cliente"
-                                        value={selectedService.service_client[0].name}
-                                        isReadOnly
-                                        description="Nome do cliente associado ao serviço"
-                                        aria-label="Nome do cliente"
-                                    />
-                                    <Input
-                                        label="Email do Cliente"
-                                        value={selectedService.service_client[0].email}
-                                        isReadOnly
-                                        description="Email do cliente"
-                                        aria-label="Email do cliente"
-                                    />
-                                    <Input
-                                        label="Telefone do Cliente"
-                                        value={selectedService.service_client[0].phone}
-                                        isReadOnly
-                                        description="Telefone do cliente"
-                                        aria-label="Telefone do cliente"
-                                    />
-                                    <Textarea
-                                        label="Endereço do Cliente"
-                                        value={selectedService.service_client[0].address}
-                                        isReadOnly
-                                        description="Endereço do cliente"
-                                        aria-label="Endereço do cliente"
-                                    />
-                                </div>
-                            )}
+                        <div className="mt-4">
+                            <h2 className="text-2xl font-bold mb-4 p-2">Informações do Cliente</h2>
+                            <Input
+                                label="Nome do Cliente"
+                                value={formData.customer_name}
+                                onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                                description="Nome do cliente associado ao serviço"
+                                isRequired
+                                aria-label="Nome do cliente"
+                            />
+                            <Input
+                                label="Email do Cliente"
+                                value={formData.customer_email}
+                                onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
+                                description="Email do cliente"
+                                isRequired
+                                aria-label="Email do cliente"
+                            />
+                            <Input
+                                label="Telefone do Cliente"
+                                value={formData.customer_phone}
+                                onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
+                                description="Telefone do cliente"
+                                isRequired
+                                aria-label="Telefone do cliente"
+                            />
+                            <Textarea
+                                label="Endereço do Cliente"
+                                value={formData.customer_address}
+                                onChange={(e) => setFormData({ ...formData, customer_address: e.target.value })}
+                                description="Endereço do cliente"
+                                isRequired
+                                aria-label="Endereço do cliente"
+                            />
                         </div>
 
                         <div className="mt-4">
@@ -669,6 +761,10 @@ export default function Services() {
                                     custom_attributes: customAttributes,
                                     attachments: selectedService.attachments?.map((a) => ({ file: a.file, type: a.type })) ?? [],
                                     status: selectedService.status,
+                                    customer_name: selectedService.service_client?.[0]?.name ?? '',
+                                    customer_email: selectedService.service_client?.[0]?.email ?? '',
+                                    customer_phone: selectedService.service_client?.[0]?.phone ?? '',
+                                    customer_address: selectedService.service_client?.[0]?.address ?? '',
                                 });
                                 setShowSaveButton(false);
                             }}

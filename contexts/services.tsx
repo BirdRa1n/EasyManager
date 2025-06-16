@@ -102,7 +102,7 @@ export const ServicesProvider = ({ children }: { children: ReactNode }) => {
 
                 const { data, error } = await supabase
                     .from("services")
-                    .select("*, stores(id, name)")
+                    .select("*, stores(id, name), service_client(*)")
                     .eq("id", id)
                     .eq("team_id", team.id)
                     .single();
@@ -140,13 +140,55 @@ export const ServicesProvider = ({ children }: { children: ReactNode }) => {
     );
 
     const updateService = useCallback(
-        async (id: string, updates: { name: string; description?: string; type: string; price?: number; duration?: string; store_id?: string; custom_attributes?: any, attachments?: { file: string | File; type: string }[], status?: 'pending' | 'in_progress' | 'completed' | 'cancelled' }) => {
+        async (id: string, updates: {
+            name: string;
+            description?: string;
+            type: string;
+            price?: number;
+            duration?: string;
+            store_id?: string;
+            custom_attributes?: any;
+            attachments?: { file: string; type: string }[];
+            status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+        }) => {
             setLoading(true);
             try {
                 if (!team?.id) {
                     throw new Error("Team ID is not available");
                 }
 
+                // Fetch current service to compare attachments
+                const { data: current, error: fetchError } = await supabase
+                    .from("services")
+                    .select("attachments")
+                    .eq("id", id)
+                    .eq("team_id", team.id)
+                    .single();
+
+                if (fetchError) throw fetchError;
+
+                const currentAttachments = current?.attachments || [];
+                const newAttachments = updates.attachments || [];
+
+                // Identify which files were removed
+                const removedAttachments = currentAttachments.filter(
+                    (old: { file: string }) => !newAttachments.some((n) => n.file === old.file)
+                );
+
+                // Delete removed files from storage
+                for (const file of removedAttachments) {
+                    const filePath = decodeURIComponent(new URL(file.file).pathname.replace(/^\/storage\/v1\/object\/public\/services\//, ""));
+                    const { error: deleteError } = await supabase.storage
+                        .from("services")
+                        .remove([filePath]);
+
+                    if (deleteError) {
+                        console.warn("Erro ao remover arquivo do storage:", deleteError.message);
+                        // Continue despite storage deletion errors
+                    }
+                }
+
+                // Update the service in the database
                 const { data, error } = await supabase
                     .from("services")
                     .update({
@@ -157,12 +199,12 @@ export const ServicesProvider = ({ children }: { children: ReactNode }) => {
                         duration: updates.duration,
                         store_id: updates.store_id,
                         custom_attributes: updates.custom_attributes,
+                        attachments: updates.attachments,
                         status: updates.status,
                     })
-
                     .eq("id", id)
                     .eq("team_id", team.id)
-                    .select("*, stores(id, name)")
+                    .select("*, stores(id, name), service_client(*)")
                     .single();
 
                 if (error) throw error;
@@ -180,7 +222,6 @@ export const ServicesProvider = ({ children }: { children: ReactNode }) => {
                         variant: "solid",
                         timeout: 3000,
                     });
-                    fetchService(id);
                 }
             } catch (error: any) {
                 console.error("Error updating service:", error.message);
