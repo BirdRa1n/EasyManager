@@ -72,7 +72,7 @@ export const ServicesProvider = ({ children }: { children: ReactNode }) => {
 
             const { data, error } = await supabase
                 .from("services")
-                .select("*, stores(id, name)")
+                .select("*, stores(id, name), service_client(*)")
                 .eq("team_id", team.id)
                 .order("created_at", { ascending: false })
 

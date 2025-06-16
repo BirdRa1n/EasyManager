@@ -275,6 +275,10 @@ export default function Services() {
                 timeout: 3000,
             });
         }
+        finally {
+            setFormData(null);
+            setSelectedService(null);
+        }
     }, [selectedService, formData, team, stores, serviceTypes, updateService, setSelectedService]);
 
     // Update formData for attachments
@@ -335,7 +339,7 @@ export default function Services() {
                 ...prev,
                 custom_attributes: [
                     ...prev.custom_attributes,
-                    { key: ``, value: '' },
+                    { key: '', value: '' },
                 ],
             };
         });
@@ -365,7 +369,7 @@ export default function Services() {
             <ServiceTable />
             <Card className="w-full flex flex-col mt-10" shadow='none' id="service">
                 <CardBody>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-2">
                         <div>
                             <h2 className="text-2xl font-bold mb-4 p-2">Informações do Serviço</h2>
                             <Input
@@ -411,7 +415,6 @@ export default function Services() {
                             />
                         </div>
 
-
                         <div>
                             <h2 className="text-2xl font-bold mb-4 p-2">Detalhes do Serviço</h2>
                             <Input
@@ -424,7 +427,6 @@ export default function Services() {
                                 }}
                                 description="Preço do serviço (em reais)"
                                 placeholder="0,00"
-                                startContent={<span>R$</span>}
                                 step="0.01"
                                 min="0"
                                 aria-label="Preço do serviço"
@@ -464,7 +466,42 @@ export default function Services() {
                                     </SelectItem>
                                 )}
                             </Select>
+                        </div>
 
+                        <div className="">
+                            {selectedService.service_client && selectedService.service_client.length > 0 && (
+                                <div className="mt-4">
+                                    <h2 className="text-2xl font-bold mb-4 p-2">Informações do Cliente</h2>
+                                    <Input
+                                        label="Nome do Cliente"
+                                        value={selectedService.service_client[0].name}
+                                        isReadOnly
+                                        description="Nome do cliente associado ao serviço"
+                                        aria-label="Nome do cliente"
+                                    />
+                                    <Input
+                                        label="Email do Cliente"
+                                        value={selectedService.service_client[0].email}
+                                        isReadOnly
+                                        description="Email do cliente"
+                                        aria-label="Email do cliente"
+                                    />
+                                    <Input
+                                        label="Telefone do Cliente"
+                                        value={selectedService.service_client[0].phone}
+                                        isReadOnly
+                                        description="Telefone do cliente"
+                                        aria-label="Telefone do cliente"
+                                    />
+                                    <Textarea
+                                        label="Endereço do Cliente"
+                                        value={selectedService.service_client[0].address}
+                                        isReadOnly
+                                        description="Endereço do cliente"
+                                        aria-label="Endereço do cliente"
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         <div className="mt-4">
@@ -519,10 +556,11 @@ export default function Services() {
                                     </TableBody>
                                 </Table>
                             ) : (
-                                <p className="text-small text-default-400">Nenhum anotação personalizada adicionada.</p>
+                                <p className="text-small ml-3 text-default-400">Nenhum anotação personalizada adicionada.</p>
                             )}
                         </div>
                     </div>
+
                     <div className="mt-5">
                         <h2 className="text-2xl font-bold mb-4 p-2">Anexos</h2>
                         <Input

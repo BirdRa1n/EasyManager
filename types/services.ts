@@ -1,3 +1,5 @@
+import { Client } from "./client";
+
 interface ServiceType {
     id: string;
     name: string;
@@ -28,6 +30,7 @@ interface Service {
     status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
     service_types?: ServiceType;
     stores?: Store;
+    service_client?: Client[];
 }
 
 export type { Service, ServiceType, Store };

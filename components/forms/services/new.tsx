@@ -22,6 +22,12 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [attachments, setAttachments] = useState<{ file: File; type: string }[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
 
+    //client
+    const [customerName, setCustomerName] = useState<string>("");
+    const [customerEmail, setCustomerEmail] = useState<string>("");
+    const [customerPhone, setCustomerPhone] = useState<string>("");
+    const [customerAddress, setCustomerAddress] = useState<string>("");
+
     // Add custom attribute
     const addCustomAttribute = () => {
         setCustomAttributes([...customAttributes, { key: "", value: "" }]);
@@ -107,6 +113,51 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             return;
         }
 
+        // Validate client fields
+        if (!customerName || customerName.length < 3) {
+            addToast({
+                title: "Erro ao adicionar serviço",
+                description: "O nome do cliente deve ter pelo menos 3 caracteres.",
+                variant: "solid",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
+        }
+
+        if (!customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+            addToast({
+                title: "Erro ao adicionar serviço",
+                description: "Digite um email válido para o cliente.",
+                variant: "solid",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
+        }
+
+        if (!customerPhone || customerPhone.length < 10) {
+            addToast({
+                title: "Erro ao adicionar serviço",
+                description: "O telefone do cliente deve ter pelo menos 10 caracteres.",
+                variant: "solid",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
+        }
+
+        if (!customerAddress || customerAddress.length < 5) {
+            addToast({
+                title: "Erro ao adicionar serviço",
+                description: "O endereço do cliente deve ter pelo menos 5 caracteres.",
+                variant: "solid",
+                color: "danger",
+                timeout: 3000,
+            });
+            return;
+        }
+
         // Validate custom attributes
         const customAttrKeys = new Set(customAttributes.map((attr) => attr.key));
         if (customAttrKeys.size !== customAttributes.length) {
@@ -165,7 +216,7 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         try {
             setLoading(true);
-            // Insert service to get ID for attachment storage
+            // Insert service to get ID for attachment storage and client data
             const { data: service, error: serviceError } = await supabase
                 .from("services")
                 .insert(serviceData)
@@ -184,6 +235,34 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             }
 
             if (service) {
+                // Insert client data
+                const clientData = {
+                    name: customerName,
+                    email: customerEmail,
+                    phone: customerPhone,
+                    address: customerAddress,
+                    team_id: team.id,
+                    service_id: service.id,
+                    created_at: new Date().toISOString(),
+                };
+
+                const { error: clientError } = await supabase
+                    .from("service_client")
+                    .insert(clientData);
+
+                if (clientError) {
+                    // Rollback service insertion if client insertion fails
+                    await supabase.from("services").delete().eq("id", service.id);
+                    addToast({
+                        title: "Erro ao adicionar serviço",
+                        description: `Erro ao adicionar dados do cliente: ${clientError.message}`,
+                        variant: "solid",
+                        color: "danger",
+                        timeout: 3000,
+                    });
+                    return;
+                }
+
                 // Handle attachments
                 if (attachments.length > 0) {
                     const attachmentData: { file: string; type: string }[] = [];
@@ -191,6 +270,7 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         const { file, type } = attachment;
                         if (!["image/jpeg", "image/png", "image/jpg", "image/webp", "image/gif", "application/pdf"].includes(file.type)) {
                             await supabase.from("services").delete().eq("id", service.id);
+                            await supabase.from("service_client").delete().eq("service_id", service.id);
                             addToast({
                                 title: "Erro ao adicionar serviço",
                                 description: `O arquivo ${file.name} deve ser JPEG, PNG ou PDF.`,
@@ -203,6 +283,7 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         if (file.size > 5 * 1024 * 1024) {
                             // 5MB limit
                             await supabase.from("services").delete().eq("id", service.id);
+                            await supabase.from("service_client").delete().eq("service_id", service.id);
                             addToast({
                                 title: "Erro ao adicionar serviço",
                                 description: `O arquivo ${file.name} não pode exceder 5MB.`,
@@ -229,6 +310,7 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         if (uploadError) {
                             console.log("Upload error:", { path, error: uploadError });
                             await supabase.from("services").delete().eq("id", service.id);
+                            await supabase.from("service_client").delete().eq("service_id", service.id);
                             addToast({
                                 title: "Erro ao adicionar serviço",
                                 description: uploadError.message,
@@ -252,6 +334,7 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     if (updateError) {
                         console.log("Update error:", updateError);
                         await supabase.from("services").delete().eq("id", service.id);
+                        await supabase.from("service_client").delete().eq("service_id", service.id);
                         addToast({
                             title: "Erro ao adicionar serviço",
                             description: updateError.message,
@@ -270,7 +353,7 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 onClose();
                 addToast({
                     title: "Sucesso",
-                    description: "Serviço adicionado com sucesso.",
+                    description: "Serviço e dados do cliente adicionados com sucesso.",
                     variant: "solid",
                     color: "primary",
                     timeout: 3000,
@@ -296,174 +379,225 @@ const NewServiceForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <ModalBody>
                 <div>
                     <Form onSubmit={handleSubmit} className="flex flex-col gap-2 w-full">
-                        <div className="w-full">
-                            <p className="text-default-600 text-sm mb-2">Informações do serviço</p>
-                            <Input
-                                name="name"
-                                label="Nome do serviço"
-                                size="md"
-                                placeholder="Ex: Reparo de Tela de Celular"
-                                description="Digite o nome do serviço (mínimo 3 caracteres)."
-                                onChange={(e) => setName(e.target.value)}
-                                value={name}
-                            />
-                            <Textarea
-                                name="description"
-                                label="Descrição do serviço"
-                                size="md"
-                                placeholder="Ex: Reparo de telas quebradas para diversos modelos de celulares..."
-                                description="Digite a descrição do serviço (mínimo 5 caracteres)."
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                            />
-                            <Select
-                                name="type_id"
-                                label="Tipo de serviço"
-                                placeholder="Selecione o tipo"
-                                description="Selecione o tipo de serviço."
-                                onChange={(e) => setTypeId(e.target.value)}
-                                value={typeId}
-                            >
-                                {serviceTypes.map((st) => (
-                                    <SelectItem key={st.id}>
-                                        {st.name}
-                                    </SelectItem>
-                                ))}
-                            </Select>
-                            <Input
-                                name="price"
-                                label="Preço"
-                                size="md"
-                                placeholder="Ex: 150.00"
-                                description="Digite o preço do serviço (opcional)."
-                                type="number"
-                                step="0.01"
-                                onChange={(e) => setPrice(e.target.value)}
-                                value={price}
-                            />
-                            <Input
-                                name="duration"
-                                label="Duração"
-                                size="md"
-                                placeholder="Ex: 1 hora"
-                                description="Digite a duração do serviço (opcional)."
-                                onChange={(e) => setDuration(e.target.value)}
-                                value={duration}
-                            />
-                            <Select
-                                name="store_id"
-                                label="Loja"
-                                placeholder="Selecione a loja"
-                                description="Selecione a loja associada (opcional)."
-                                onChange={(e) => setStoreId(e.target.value)}
-                                value={storeId}
-                            >
-                                {stores.map((store) => (
-                                    <SelectItem key={store.id}>
-                                        {store.name}
-                                    </SelectItem>
-                                ))}
-                            </Select>
-                        </div>
-                        <div className="w-full">
-                            <div className="flex justify-between items-center mb-2">
-                                <p className="text-default-600 text-sm mb-2">Anotações personalizadas</p>
-                                <Button
-                                    size="sm"
-                                    onPress={addCustomAttribute}
-                                    aria-label="Adicionar novo atributo personalizado"
-                                >
-                                    Adicionar
-                                </Button>
-                            </div>
-                            {customAttributes.length > 0 ? (
-                                <Table aria-label="Anotações personalizadas">
-                                    <TableHeader>
-                                        <TableColumn>ETIQUETA</TableColumn>
-                                        <TableColumn>CONTEÚDO</TableColumn>
-                                        <TableColumn align="center">AÇÕES</TableColumn>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {customAttributes.map((attr, index) => (
-                                            <TableRow key={index}>
-                                                <TableCell>
-                                                    <Textarea
-                                                        value={attr.key}
-                                                        onChange={(e) => updateCustomAttribute(index, 'key', e.target.value)}
-                                                        placeholder="Etiqueta"
-                                                        aria-label={`Título ${index + 1}`}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Textarea
-                                                        value={attr.value}
-                                                        onChange={(e) => updateCustomAttribute(index, 'value', e.target.value)}
-                                                        placeholder="Valor"
-                                                        aria-label={`Valor do atributo ${index + 1}`}
-                                                    />
-                                                </TableCell>
-                                                <TableCell className="flex justify-center">
-                                                    <Button
-                                                        size="sm"
-                                                        color="danger"
-                                                        onPress={() => removeCustomAttribute(index)}
-                                                        aria-label={`Remover atributo ${index + 1}`}
-                                                    >
-                                                        Remover
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
+                        <div className="w-full grid grid-cols-1 gap-4 lg:grid-cols-2 flex-grow">
+                            <div>
+                                <div className="w-full">
+                                    <p className="text-default-600 text-sm mb-2">Informações do serviço</p>
+                                    <Input
+                                        name="name"
+                                        label="Nome do serviço"
+                                        size="md"
+                                        placeholder="Ex: Reparo de Tela de Celular"
+                                        description="Digite o nome do serviço (mínimo 3 caracteres)."
+                                        onChange={(e) => setName(e.target.value)}
+                                        value={name}
+                                    />
+                                    <Textarea
+                                        name="description"
+                                        label="Descrição do serviço"
+                                        size="md"
+                                        placeholder="Ex: Reparo de telas quebradas para diversos modelos de celulares..."
+                                        description="Digite a descrição do serviço (mínimo 5 caracteres)."
+                                        value={description}
+                                        onChange={(e) => setDescription(e.target.value)}
+                                    />
+                                    <Select
+                                        name="type_id"
+                                        label="Tipo de serviço"
+                                        placeholder="Selecione o tipo"
+                                        description="Selecione o tipo de serviço."
+                                        onChange={(e) => setTypeId(e.target.value)}
+                                        value={typeId}
+                                    >
+                                        {serviceTypes.map((st) => (
+                                            <SelectItem key={st.id}>
+                                                {st.name}
+                                            </SelectItem>
                                         ))}
-                                    </TableBody>
-                                </Table>
-                            ) : (
-                                <p className="text-small text-default-400">Nenhum atributo personalizado adicionado.</p>
-                            )}
-                        </div>
-                        <div className="w-full">
-                            <p className="text-default-600 text-sm mb-2">Anexos</p>
-                            <Input
-                                name="attachments"
-                                size="md"
-                                type="file"
-                                accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/jpg,application/pdf"
-                                multiple
-                                description="Selecione arquivos JPEG, PNG ou PDF (máx. 5MB por arquivo)."
-                                onChange={(e) => {
-                                    const files = Array.from(e.target.files || []);
-                                    const validFiles = files.filter((file) =>
-                                        ["image/jpeg", "image/png", "application/pdf"].includes(file.type) && file.size <= 5 * 1024 * 1024
-                                    );
-                                    if (validFiles.length !== files.length) {
-                                        addToast({
-                                            title: "Erro ao selecionar arquivos",
-                                            description: "Alguns arquivos não são válidos (apenas JPEG, PNG ou PDF, máx. 5MB).",
-                                            variant: "solid",
-                                            color: "danger",
-                                            timeout: 3000,
-                                        });
-                                    }
-                                    setAttachments(
-                                        validFiles.map((file) => ({
-                                            file,
-                                            type: file.type.startsWith("image") ? "image" : "pdf",
-                                        }))
-                                    );
-                                    console.log("Selected attachments:", validFiles.map((f) => ({ name: f.name, type: f.type }))); // Debug
-                                }}
-                            />
-                            {attachments.length > 0 && (
-                                <div className="mt-2">
-                                    <p className="text-small text-default-500">Anexos selecionados:</p>
-                                    <ul className="list-disc pl-5">
-                                        {attachments.map((a, index) => (
-                                            <li key={index} className="text-small">
-                                                {a.file.name} ({a.type})
-                                            </li>
+                                    </Select>
+                                    <Input
+                                        name="price"
+                                        label="Preço"
+                                        size="md"
+                                        placeholder="Ex: 150.00"
+                                        description="Digite o preço do serviço (opcional)."
+                                        type="number"
+                                        step="0.01"
+                                        onChange={(e) => setPrice(e.target.value)}
+                                        value={price}
+                                    />
+                                    <Input
+                                        name="duration"
+                                        label="Duração"
+                                        size="md"
+                                        placeholder="Ex: 1 hora"
+                                        description="Digite a duração do serviço (opcional)."
+                                        onChange={(e) => setDuration(e.target.value)}
+                                        value={duration}
+                                    />
+                                    <Select
+                                        name="store_id"
+                                        label="Loja"
+                                        placeholder="Selecione a loja"
+                                        description="Selecione a loja associada (opcional)."
+                                        onChange={(e) => setStoreId(e.target.value)}
+                                        value={storeId}
+                                    >
+                                        {stores.map((store) => (
+                                            <SelectItem key={store.id}>
+                                                {store.name}
+                                            </SelectItem>
                                         ))}
-                                    </ul>
+                                    </Select>
                                 </div>
-                            )}
+                            </div>
+
+                            <div>
+                                <div className="w-full">
+                                    <p className="text-default-600 text-sm mb-2">Cliente</p>
+
+                                    <Input
+                                        name="customer_name"
+                                        label="Nome do cliente"
+                                        size="md"
+                                        placeholder="Ex: João da Silva"
+                                        description="Digite o nome do cliente (mínimo 3 caracteres)."
+                                        onChange={(e) => setCustomerName(e.target.value)}
+                                        value={customerName}
+                                    />
+
+                                    <Input
+                                        name="customer_email"
+                                        label="Email do cliente"
+                                        size="md"
+                                        placeholder="Ex: joao@example.com"
+                                        description="Digite o email do cliente (mínimo 3 caracteres)."
+                                        onChange={(e) => setCustomerEmail(e.target.value)}
+                                        value={customerEmail}
+                                    />
+
+                                    <Input
+                                        name="customer_phone"
+                                        label="Telefone do cliente"
+                                        size="md"
+                                        placeholder="Ex: (99) 99999-9999"
+                                        description="Digite o telefone do cliente (mínimo 10 caracteres)."
+                                        onChange={(e) => setCustomerPhone(e.target.value)}
+                                        value={customerPhone}
+                                    />
+
+                                    <Textarea
+                                        name="customer_address"
+                                        label="Endereço do cliente"
+                                        size="md"
+                                        placeholder="Ex: Rua das Flores, 123"
+                                        description="Digite o endereço do cliente (mínimo 5 caracteres)."
+                                        onChange={(e) => setCustomerAddress(e.target.value)}
+                                        value={customerAddress}
+                                    />
+                                </div>
+                                <div className="w-full">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="text-default-600 text-sm mb-2">Anotações personalizadas</p>
+                                        <Button
+                                            size="sm"
+                                            onPress={addCustomAttribute}
+                                            aria-label="Adicionar novo atributo personalizado"
+                                        >
+                                            Adicionar
+                                        </Button>
+                                    </div>
+                                    {customAttributes.length > 0 ? (
+                                        <Table shadow="none" aria-label="Anotações personalizadas">
+                                            <TableHeader>
+                                                <TableColumn>ETIQUETA</TableColumn>
+                                                <TableColumn>CONTEÚDO</TableColumn>
+                                                <TableColumn align="center">AÇÕES</TableColumn>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {customAttributes.map((attr, index) => (
+                                                    <TableRow key={index}>
+                                                        <TableCell>
+                                                            <Textarea
+                                                                value={attr.key}
+                                                                onChange={(e) => updateCustomAttribute(index, 'key', e.target.value)}
+                                                                placeholder="Etiqueta"
+                                                                aria-label={`Título ${index + 1}`}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Textarea
+                                                                value={attr.value}
+                                                                onChange={(e) => updateCustomAttribute(index, 'value', e.target.value)}
+                                                                placeholder="Valor"
+                                                                aria-label={`Valor do atributo ${index + 1}`}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell className="flex justify-center">
+                                                            <Button
+                                                                size="sm"
+                                                                color="danger"
+                                                                onPress={() => removeCustomAttribute(index)}
+                                                                aria-label={`Remover atributo ${index + 1}`}
+                                                            >
+                                                                Remover
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    ) : (
+                                        <p className="text-small text-default-400">Nenhum atributo personalizado adicionado.</p>
+                                    )}
+                                </div>
+
+                                <div className="w-full">
+                                    <p className="text-default-600 text-sm mb-2">Anexos</p>
+                                    <Input
+                                        name="attachments"
+                                        size="md"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/jpg,application/pdf"
+                                        multiple
+                                        description="Selecione arquivos JPEG, PNG ou PDF (máx. 5MB por arquivo)."
+                                        onChange={(e) => {
+                                            const files = Array.from(e.target.files || []);
+                                            const validFiles = files.filter((file) =>
+                                                ["image/jpeg", "image/png", "application/pdf"].includes(file.type) && file.size <= 5 * 1024 * 1024
+                                            );
+                                            if (validFiles.length !== files.length) {
+                                                addToast({
+                                                    title: "Erro ao selecionar arquivos",
+                                                    description: "Alguns arquivos não são válidos (apenas JPEG, PNG ou PDF, máx. 5MB).",
+                                                    variant: "solid",
+                                                    color: "danger",
+                                                    timeout: 3000,
+                                                });
+                                            }
+                                            setAttachments(
+                                                validFiles.map((file) => ({
+                                                    file,
+                                                    type: file.type.startsWith("image") ? "image" : "pdf",
+                                                }))
+                                            );
+                                            console.log("Selected attachments:", validFiles.map((f) => ({ name: f.name, type: f.type }))); // Debug
+                                        }}
+                                    />
+                                    {attachments.length > 0 && (
+                                        <div className="mt-2">
+                                            <p className="text-small text-default-500">Anexos selecionados:</p>
+                                            <ul className="list-disc pl-5">
+                                                {attachments.map((a, index) => (
+                                                    <li key={index} className="text-small">
+                                                        {a.file.name} ({a.type})
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                         <div className="flex justify-end w-full">
                             <Button color="primary" type="submit" isLoading={loading} isDisabled={loading}>
