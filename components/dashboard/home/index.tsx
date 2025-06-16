@@ -15,9 +15,15 @@ export default function Home() {
     const { members, stores } = useTeam();
     const { services } = useServices();
 
+    const today = new Date().toISOString().split("T")[0];
+
     React.useEffect(() => {
-        const pendingServices = services.filter((service) => service.status === "pending");
-        const completedServices = services.filter((service) => service.status === "completed");
+        const pendingServices = services.filter(
+            (service) => service.status === "pending" && service.created_at.split("T")[0] === today
+        );
+        const completedServices = services.filter(
+            (service) => service.status === "completed" && service.created_at.split("T")[0] === today
+        );
         setServicesPanding(pendingServices);
         setServicesCompleted(completedServices);
     }, [services]);
