@@ -2,10 +2,11 @@ import { Card, CardBody } from "@heroui/react";
 
 import AuthForm from "@/components/forms/auth";
 import { subtitle, title } from "@/components/primitives";
-import { useUser } from "@/contexts/user";
 import DefaultLayout from "@/layouts/default";
 import { useRouter } from "next/router";
 import React from "react";
+
+import { useUser } from "@/contexts/user";
 
 export default function IndexPage() {
   const { user } = useUser();

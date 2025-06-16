@@ -265,6 +265,12 @@ export default function ServiceTable() {
                                 <DropdownItem key="view" onPress={() => setSelectedService(service)}>
                                     Visualizar
                                 </DropdownItem>
+                                <DropdownItem key="view" onPress={() => {
+                                    const currentHost = window.location.origin;
+                                    window.open(`${currentHost}/service/${service.id}`);
+                                }}>
+                                    Obter Link
+                                </DropdownItem>
                                 <DropdownItem key="edit" onPress={() => setSelectedService(service)}>
                                     Editar
                                 </DropdownItem>
