@@ -33,4 +33,25 @@ interface Service {
     service_client?: Client[];
 }
 
-export type { Service, ServiceType, Store };
+interface FormDataType {
+    name: string;
+    description: string;
+    type_id: string;
+    price: number | null;
+    duration: string | null;
+    store_id: string | null;
+    custom_attributes: { key: string; value: string }[];
+    attachments: { file: string | File; type: string }[];
+    status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+    customer_name: string;
+    customer_email: string;
+    customer_phone: string;
+    customer_address: string;
+}
+
+interface CustomAttribute {
+    key: string;
+    value: string;
+}
+
+export type { CustomAttribute, FormDataType, Service, ServiceType, Store };
