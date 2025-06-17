@@ -1,55 +1,94 @@
-# Next.js & HeroUI Template
+# **EasyManager**
 
-This is a template for creating applications using Next.js 14 (pages directory) and HeroUI (v2).
+**EasyManager** é uma aplicação de gerenciamento comercial construída com Next.js e HeroUI. Ela permite a gestão centralizada de lojas, produtos, serviços e documentos associados, oferecendo uma solução completa para equipes organizarem suas operações com eficiência.
 
-[Try it on CodeSandbox](https://githubbox.com/heroui-inc/next-pages-template)
+## 🚀 Funcionalidades
 
-> Note: Since Next.js 14, the pages router is recommend migrating to the [new App Router](https://nextjs.org/docs/app) to leverage React's latest features
->
-> Read more: [Pages Router](https://nextjs.org/docs/pages)
+* 📦 Cadastro e gerenciamento de **produtos**
 
-## Technologies Used
+  * Suporte a identificadores como **códigos de barras (EAN)** em tabela separada
+* 🏬 Gerenciamento de **lojas**
 
-- [Next.js 14](https://nextjs.org/docs/getting-started)
-- [HeroUI](https://heroui.com)
-- [Tailwind CSS](https://tailwindcss.com)
-- [Tailwind Variants](https://tailwind-variants.org)
-- [TypeScript](https://www.typescriptlang.org)
-- [Framer Motion](https://www.framer.com/motion)
-- [next-themes](https://github.com/pacocoursey/next-themes)
+  * Possibilidade de vincular produtos a lojas e definir preços específicos por loja
+* 🧾 Registro de **serviços**
 
-## How to Use
+  * Cada serviço contém:
 
-To create a new project based on this template using `create-next-app`, run the following command:
+    * Informações do **cliente**
+    * **Detalhes técnicos** do serviço
+    * Upload de **anexos/documentos**
+* 👥 Suporte a múltiplas equipes (multi-tenant) com escopo por `team_id`
 
-```bash
-npx create-next-app -e https://github.com/heroui-inc/next-pages-template
+## 🧱 Tecnologias Utilizadas
+
+* [Next.js 14](https://nextjs.org/docs)
+* [HeroUI v2](https://heroui.com)
+* [Tailwind CSS](https://tailwindcss.com)
+* [TypeScript](https://www.typescriptlang.org)
+* [Framer Motion](https://www.framer.com/motion)
+* [Supabase](https://supabase.com) – para banco de dados e autenticação
+* [PostgreSQL](https://www.postgresql.org)
+
+## 📁 Estrutura do Projeto
+
+```
+.
+├── components          # Componentes reutilizáveis
+├── constants           # Constantes da aplicação
+├── config              # Configurações globais (ex: Supabase)
+├── contexts            # Contextos React para estado global
+├── hooks               # Custom hooks
+├── layouts             # Layouts de páginas
+├── pages               # Rotas da aplicação (Next.js Pages Router)
+├── public              # Arquivos públicos
+├── styles              # Estilos globais
+├── supabase            # Arquivos relacionados ao Supabase
+├── types               # Tipos TypeScript compartilhados
+├── utils               # Funções utilitárias
 ```
 
-### Install dependencies
+## 🛠️ Como Usar
 
-You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
+### 1. Instale as dependências
 
 ```bash
 npm install
 ```
 
-### Run the development server
+ou
+
+```bash
+yarn
+```
+
+### 2. Execute o servidor de desenvolvimento
 
 ```bash
 npm run dev
 ```
 
-### Setup pnpm (optional)
+### 3. Configure o Supabase
 
-If you are using `pnpm`, you need to add the following code to your `.npmrc` file:
+Crie um projeto no Supabase e configure as variáveis de ambiente necessárias (em `.env.local`):
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+```
+
+### 4. Configuração opcional para `pnpm`
 
 ```bash
 public-hoist-pattern[]=*@heroui/*
 ```
 
-After modifying the `.npmrc` file, you need to run `pnpm install` again to ensure that the dependencies are installed correctly.
+## 📦 Scripts Disponíveis
 
-## License
+* `dev` – Inicia o servidor Next.js local
+* `build` – Gera a aplicação para produção
+* `start` – Inicia o servidor em modo produção
+* `lint` – Verifica problemas de linting
 
-Licensed under the [MIT license](https://github.com/heroui-inc/next-pages-template/blob/main/LICENSE).
+## 📄 Licença
+
+Distribuído sob a [licença MIT](./LICENSE).
