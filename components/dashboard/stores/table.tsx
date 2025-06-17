@@ -1,3 +1,4 @@
+import NewStoreForm from "@/components/forms/new-store";
 import { useTeam } from "@/contexts/team";
 import {
     Button,
@@ -7,6 +8,8 @@ import {
     DropdownMenu,
     DropdownTrigger,
     Input,
+    Modal,
+    ModalContent,
     Pagination,
     Selection,
     SortDescriptor,
@@ -15,7 +18,8 @@ import {
     TableCell,
     TableColumn,
     TableHeader,
-    TableRow
+    TableRow,
+    useDisclosure
 } from "@heroui/react";
 import React, { SVGProps } from "react";
 
@@ -156,6 +160,8 @@ export default function TableStores() {
         column: "name",
         direction: "ascending",
     });
+    const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
     const [page, setPage] = React.useState(1);
 
     const hasSearchFilter = Boolean(filterValue);
@@ -342,7 +348,7 @@ export default function TableStores() {
                                 ))}
                             </DropdownMenu>
                         </Dropdown>
-                        <Button color="primary" endContent={<PlusIcon />}>
+                        <Button color="primary" endContent={<PlusIcon />} onPress={onOpen}>
                             Adicionar
                         </Button>
                     </div>
@@ -395,39 +401,50 @@ export default function TableStores() {
     }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
 
     return (
-        <Table
-            isHeaderSticky
-            aria-label="Stores table with custom cells, pagination and sorting"
-            bottomContent={bottomContent}
-            bottomContentPlacement="outside"
-            classNames={{
-                wrapper: "max-h-[382px]",
-            }}
-            selectedKeys={selectedKeys}
-            sortDescriptor={sortDescriptor}
-            topContent={topContent}
-            topContentPlacement="outside"
-            onSelectionChange={setSelectedKeys}
-            onSortChange={setSortDescriptor}
-        >
-            <TableHeader columns={headerColumns}>
-                {(column) => (
-                    <TableColumn
-                        key={column.uid}
-                        align={column.uid === "actions" ? "center" : "start"}
-                        allowsSorting={column.sortable}
-                    >
-                        {column.name}
-                    </TableColumn>
-                )}
-            </TableHeader>
-            <TableBody emptyContent={"Nenhuma loja encontrada"} items={sortedItems}>
-                {(item) => (
-                    <TableRow key={item.id}>
-                        {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
+        <>
+            <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="xl">
+                <ModalContent>
+                    {(onClose) => (
+                        <div className="overflow-y-auto">
+                            <NewStoreForm onClose={onClose} />
+                        </div>
+                    )}
+                </ModalContent>
+            </Modal>
+            <Table
+                isHeaderSticky
+                aria-label="Stores table with custom cells, pagination and sorting"
+                bottomContent={bottomContent}
+                bottomContentPlacement="outside"
+                classNames={{
+                    wrapper: "max-h-[382px]",
+                }}
+                selectedKeys={selectedKeys}
+                sortDescriptor={sortDescriptor}
+                topContent={topContent}
+                topContentPlacement="outside"
+                onSelectionChange={setSelectedKeys}
+                onSortChange={setSortDescriptor}
+            >
+                <TableHeader columns={headerColumns}>
+                    {(column) => (
+                        <TableColumn
+                            key={column.uid}
+                            align={column.uid === "actions" ? "center" : "start"}
+                            allowsSorting={column.sortable}
+                        >
+                            {column.name}
+                        </TableColumn>
+                    )}
+                </TableHeader>
+                <TableBody emptyContent={"Nenhuma loja encontrada"} items={sortedItems}>
+                    {(item) => (
+                        <TableRow key={item.id}>
+                            {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+        </>
     );
 }

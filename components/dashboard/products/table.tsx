@@ -22,7 +22,7 @@ import {
 } from "@heroui/react";
 import React, { SVGProps, useState } from "react";
 
-import NewProductForm from "@/components/forms/products/new";
+import NewProductForm from "@/components/forms/new-product/new";
 import { Modal, ModalContent } from "@heroui/react";
 import { FaTags } from "react-icons/fa6";
 

@@ -1,7 +1,7 @@
 "use client";
 import Home from "@/components/dashboard/home";
 import Products from "@/components/dashboard/products";
-import Services from "@/components/dashboard/services";
+import Services from "@/components/dashboard/services/ServiceForm";
 import Settings from "@/components/dashboard/settings";
 import Stores from "@/components/dashboard/stores";
 import { useSidebarContext } from "@/contexts/sidebar";
