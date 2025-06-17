@@ -1,4 +1,4 @@
-import NewServiceForm from "@/components/forms/services/new";
+import NewServiceForm from "@/components/forms/new-service";
 import { useServices } from "@/contexts/services";
 import {
     Button,

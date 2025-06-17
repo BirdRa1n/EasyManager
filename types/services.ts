@@ -49,9 +49,24 @@ interface FormDataType {
     customer_address: string;
 }
 
+interface NewFormDataType {
+    name: string;
+    description: string;
+    type_id: string;
+    price: string;
+    duration: string;
+    store_id: string;
+    custom_attributes: { key: string; value: string }[];
+    attachments: { file: File; type: string }[];
+    customer_name: string;
+    customer_email: string;
+    customer_phone: string;
+    customer_address: string;
+}
+
 interface CustomAttribute {
     key: string;
     value: string;
 }
 
-export type { CustomAttribute, FormDataType, Service, ServiceType, Store };
+export type { CustomAttribute, FormDataType, NewFormDataType, Service, ServiceType, Store };
