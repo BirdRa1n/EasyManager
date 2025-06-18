@@ -23,7 +23,7 @@ export default function CustomAttributesSection({
                 </Button>
             </div>
             {customAttributes.length > 0 ? (
-                <Table aria-label="Atributos personalizados">
+                <Table aria-label="Atributos personalizados" className='mt-4' removeWrapper>
                     <TableHeader>
                         <TableColumn>ETIQUETA</TableColumn>
                         <TableColumn>CONTEUDO</TableColumn>

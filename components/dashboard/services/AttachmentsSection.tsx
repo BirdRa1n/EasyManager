@@ -29,7 +29,7 @@ export default function AttachmentsSection({
             />
             {attachments.length > 0 && (
                 <div className="mt-4">
-                    <Table aria-label="Anexos">
+                    <Table aria-label="Anexos" removeWrapper>
                         <TableHeader>
                             <TableColumn>ARQUIVO</TableColumn>
                             <TableColumn>TIPO</TableColumn>
