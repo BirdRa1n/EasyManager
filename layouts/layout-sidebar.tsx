@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { useLockedBody } from "@/hooks/useBodyLock";
 import { NavbarWrapper } from "@/components/navbar/navbar";
-import { SidebarContext } from "./layout-context";
 import { SidebarWrapper } from "@/components/sidebar/sidebar";
-import { Head } from "@/layouts/head";
 import { useSidebarContext } from "@/contexts/sidebar";
+import { useLockedBody } from "@/hooks/useBodyLock";
+import { Head } from "@/layouts/head";
+import React from "react";
+import { SidebarContext } from "./layout-context";
 
 interface Props {
   children: React.ReactNode;
@@ -16,9 +16,11 @@ export const Layout = ({ children }: Props) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const { sidebarActiveItem, setSidebarActiveItem } = useSidebarContext();
   const [_, setLocked] = useLockedBody(false);
+
   const handleToggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-    setLocked(!sidebarOpen);
+    const newState = !sidebarOpen;
+    setSidebarOpen(newState);
+    setLocked(newState);
   };
 
   return (
@@ -32,7 +34,7 @@ export const Layout = ({ children }: Props) => {
       <section className="flex h-screen">
         <Head />
         <SidebarWrapper />
-        <div className="flex flex-col max-h-[100vh] flex-grow">
+        <div className="flex flex-col max-h-[100vh] flex-grow overflow-hidden">
           <NavbarWrapper>{children}</NavbarWrapper>
         </div>
       </section>

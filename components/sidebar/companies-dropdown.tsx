@@ -1,9 +1,9 @@
 "use client";
 import usePrimaryColor from "@/constants/Colors";
 import { useTeam } from "@/contexts/team";
-import { Spinner } from "@heroui/react";
+import { Avatar, Spinner } from "@heroui/react";
 import React, { useEffect, useState } from "react";
-import { AcmeIcon } from "../icons/acme-icon";
+import { IoLayersOutline } from "react-icons/io5";
 
 interface Company {
   name: string;
@@ -22,7 +22,7 @@ export const CompaniesDropdown = () => {
       setCompany({
         name: team.name || "Team Example",
         location: team.location || "Palo Alto, CA",
-        logo: team.logo ? <img src={team.logo} alt="Company Logo" className="w-8 h-8 rounded-full" /> : <AcmeIcon />,
+        logo: <Avatar src={team.logo} color="primary" fallback={<IoLayersOutline className="text-2xl text-ehite" />} radius="sm" alt="Company Logo" />,
       });
     }
   }, [team]);
@@ -30,7 +30,7 @@ export const CompaniesDropdown = () => {
   const [company, setCompany] = useState<Company>({
     name: "Team Exemple",
     location: "Palo Alto, CA",
-    logo: <AcmeIcon />,
+    logo: <Avatar size="sm" color="primary" />,
   });
 
   if (loading || !team) {
@@ -45,6 +45,7 @@ export const CompaniesDropdown = () => {
   }
   return (
     <div className="flex items-center gap-2 mr-1">
+      {company.logo}
       <div className="flex flex-col gap-4">
         <h3 className="text-md font-medium m-0 text-default-900 -mb-4 whitespace-nowrap truncate max-w-[180px]">
           {company.name}

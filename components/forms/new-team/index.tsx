@@ -114,6 +114,7 @@ const NewTeamForm: React.FC<NewTeamFormProps> = ({ onClose }) => {
                     title: "Erro",
                     description: `Preencha os campos obrigatórios: ${missingFields.join(", ")}.`,
                     color: "danger",
+                    variant: "solid",
                     timeout: 3000,
                 });
                 return;
@@ -199,7 +200,8 @@ const NewTeamForm: React.FC<NewTeamFormProps> = ({ onClose }) => {
             addToast({
                 title: "Sucesso",
                 description: "Equipe criada com sucesso!",
-                color: "success",
+                color: "primary",
+                variant: "solid",
                 timeout: 3000,
             });
             onClose();
@@ -209,6 +211,7 @@ const NewTeamForm: React.FC<NewTeamFormProps> = ({ onClose }) => {
                 title: "Erro",
                 description: "Falha ao criar a equipe. Tente novamente.",
                 color: "danger",
+                variant: "solid",
                 timeout: 3000,
             });
             if (newTeam?.id) {
