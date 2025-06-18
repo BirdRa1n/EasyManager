@@ -68,22 +68,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }, [fetchUser]);
 
     useEffect(() => {
-        syncLocalData();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === "SIGNED_IN" || event === "USER_UPDATED") {
-                setUser(session?.user || undefined);
-                localStorage.setItem("user", JSON.stringify(session?.user));
-            } else if (event === "SIGNED_OUT") {
-                setUser(undefined);
-                localStorage.removeItem("user");
-            }
-        });
-
-        return () => {
-            authListener.subscription.unsubscribe();
-        };
-    }, [syncLocalData]);
+        fetchUser();
+    }, [fetchUser]);
 
     const contextValue = useMemo(
         () => ({
