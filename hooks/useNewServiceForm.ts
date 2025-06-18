@@ -3,7 +3,7 @@ import { useTeam } from '@/contexts/team';
 import { supabase } from '@/supabase/client';
 import { NewFormDataType } from '@/types/services';
 import { addToast } from '@heroui/react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export const useNewServiceForm = (onClose: () => void) => {
     const { team, stores } = useTeam();
@@ -23,6 +23,52 @@ export const useNewServiceForm = (onClose: () => void) => {
         customer_address: '',
     });
     const [loading, setLoading] = useState<boolean>(false);
+    const [isAutoFilled, setIsAutoFilled] = useState<boolean>(false);
+
+    // Fetch client data based on phone number
+    useEffect(() => {
+        if (!team?.id || formData.customer_phone.length < 10 || isAutoFilled) return;
+
+        const fetchClientData = async () => {
+            try {
+                const { data: clients, error } = await supabase
+                    .from('service_client')
+                    .select('name, email, phone, address')
+                    .eq('team_id', team.id)
+                    .eq('phone', formData.customer_phone)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (error) {
+                    console.error('Error fetching client data:', error);
+                    return;
+                }
+
+                if (clients && clients.length > 0) {
+                    const client = clients[0];
+                    setFormData((prev) => ({
+                        ...prev,
+                        customer_name: prev.customer_name || client.name,
+                        customer_email: prev.customer_email || client.email,
+                        customer_address: prev.customer_address || client.address,
+                    }));
+                    setIsAutoFilled(true);
+                    addToast({
+                        title: 'Dados preenchidos',
+                        description: 'Os dados do cliente foram preenchidos automaticamente com base no número de telefone.',
+                        variant: 'solid',
+                        color: 'primary',
+                        timeout: 3000,
+                    });
+                }
+            } catch (error: any) {
+                console.error('Error fetching client data:', error);
+            }
+        };
+
+        const debounce = setTimeout(fetchClientData, 500); // Debounce to avoid excessive queries
+        return () => clearTimeout(debounce);
+    }, [formData.customer_phone, team?.id, isAutoFilled]);
 
     // Add custom attribute
     const addCustomAttribute = () => {
@@ -382,7 +428,7 @@ export const useNewServiceForm = (onClose: () => void) => {
                 setLoading(false);
             }
         },
-        [formData, team, stores, serviceTypes, services, setServices, fetchService, onClose]
+        [formData, team, stores, serviceTypes, services, setServices, fetchService, onClose, isAutoFilled]
     );
 
     return {
