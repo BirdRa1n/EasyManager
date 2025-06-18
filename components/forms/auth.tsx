@@ -4,87 +4,129 @@ import React from "react";
 
 const AuthForm = () => {
     const [selected, setSelected] = React.useState<React.Key | null>("login");
+    const [isLoading, setIsLoading] = React.useState(false);
     const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
     const [name, setName] = React.useState("");
 
     const handleLogin = async () => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        setIsLoading(true);
 
-        if (error) {
+        try {
+            if (!email || !password) {
+                addToast({
+                    title: "Erro",
+                    variant: "solid",
+                    description: "Por favor, preencha todos os campos.",
+                    color: "danger",
+                    timeout: 3000,
+                });
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (error) {
+                addToast({
+                    title: "Erro ao fazer login",
+                    description: error.message,
+                    color: "danger",
+                    variant: "solid",
+                    timeout: 3000,
+                });
+                return;
+            }
+
+            if (data?.user) {
+                addToast({
+                    title: "Login realizado com sucesso!",
+                    description: "Você será redirecionado para o dashboard.",
+                    variant: "solid",
+                    color: "primary",
+                    timeout: 3000,
+                    shouldShowTimeoutProgress: true,
+                    promise: new Promise(() => setTimeout(window.location.href = "/dashboard", 3000))
+                });
+            }
+        } catch (error) {
+            console.error(error);
             addToast({
                 title: "Erro ao fazer login",
-                description: error.message,
+                description: "Algo deu errado. Tente novamente mais tarde.",
                 color: "danger",
                 variant: "solid",
                 timeout: 3000,
             });
-            return;
-        }
-
-        if (data?.user) {
-            addToast({
-                title: "Login realizado com sucesso!",
-                description: "Você será redirecionado para o dashboard.",
-                variant: "solid",
-                color: "primary",
-                timeout: 3000,
-                shouldShowTimeoutProgress: true,
-                promise: new Promise(() => setTimeout(window.location.href = "/dashboard", 3000))
-            });
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleSignUp = async () => {
-        if (!name || !email || !password) {
-            addToast({
-                title: "Erro",
-                variant: "solid",
-                description: "Por favor, preencha todos os campos.",
-                color: "danger",
-                timeout: 3000,
-            });
-            return;
-        }
+        setIsLoading(true);
 
-        const first_name = name.split(" ")[0];
-        const last_name = name.split(" ").slice(1).join(" ") || "";
+        try {
+            if (!name || !email || !password) {
+                addToast({
+                    title: "Erro",
+                    variant: "solid",
+                    description: "Por favor, preencha todos os campos.",
+                    color: "danger",
+                    timeout: 3000,
+                });
+                return;
+            }
 
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                emailRedirectTo: 'https://easymanager.birdra1n.com/dashboard',
-                data: {
-                    first_name,
-                    last_name
+            const first_name = name.split(" ")[0];
+            const last_name = name.split(" ").slice(1).join(" ") || "";
+
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    emailRedirectTo: 'https://easymanager.birdra1n.com/dashboard',
+                    data: {
+                        first_name,
+                        last_name
+                    },
                 },
-            },
-        });
+            });
 
-        if (error) {
+            if (error) {
+                addToast({
+                    title: "Erro ao criar conta",
+                    description: error.message,
+                    variant: "solid",
+                    color: "danger",
+                    timeout: 3000,
+                });
+                return;
+            }
+
+            if (data?.user) {
+                addToast({
+                    title: "Conta criada com sucesso!",
+                    description: "Verifique seu email para ativar sua conta.",
+                    variant: "solid",
+                    color: "primary",
+                    timeout: 3000
+                });
+                setSelected("login");
+            }
+        } catch (error) {
+            console.error(error);
             addToast({
                 title: "Erro ao criar conta",
-                description: error.message,
+                description: "Algo deu errado. Tente novamente mais tarde.",
                 variant: "solid",
                 color: "danger",
                 timeout: 3000,
             });
-            return;
-        }
-
-        if (data?.user) {
-            addToast({
-                title: "Conta criada com sucesso!",
-                description: "Verifique seu email para ativar sua conta.",
-                variant: "solid",
-                color: "primary",
-                timeout: 3000
-            });
-            setSelected("login");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -108,6 +150,11 @@ const AuthForm = () => {
                         label="Senha"
                         placeholder="Digite sua senha"
                         type="password"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                handleLogin();
+                            }
+                        }}
                     />
                     <p className="text-center text-small">
                         Ainda não tem conta?{" "}
@@ -116,7 +163,7 @@ const AuthForm = () => {
                         </Link>
                     </p>
                     <div className="flex gap-2 justify-end">
-                        <Button fullWidth color="primary" onPress={handleLogin}>
+                        <Button fullWidth color="primary" onPress={handleLogin} isLoading={isLoading}>
                             Entrar
                         </Button>
                     </div>
@@ -132,6 +179,11 @@ const AuthForm = () => {
                         placeholder="Crie uma senha"
                         type="password"
                         onChange={(e) => setPassword(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                handleSignUp();
+                            }
+                        }}
                         value={password}
                     />
                     <p className="text-center text-small">
@@ -141,7 +193,7 @@ const AuthForm = () => {
                         </Link>
                     </p>
                     <div className="flex gap-2 justify-end">
-                        <Button fullWidth color="primary" onPress={handleSignUp}>
+                        <Button fullWidth color="primary" onPress={handleSignUp} isLoading={isLoading}>
                             Cadastrar
                         </Button>
                     </div>
