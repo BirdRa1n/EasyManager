@@ -1,4 +1,4 @@
-import { supabase } from "@/supabase/client";
+import { supabase } from "@/supabase/server";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function Handler(
@@ -11,11 +11,13 @@ export default async function Handler(
 
     const { id } = req.query;
 
-    const { data, error } = await supabase.from("services").select("*,service_types(name),service_client(*)").eq("id", id).maybeSingle();
+    const { data, error } = await supabase.from("services").select("*,teams(name,location,logo),service_types(name),service_client(*),stores(*)").eq("id", id).maybeSingle();
 
     if (error) {
         res.status(500).json({ name: "Internal server error", details: error.message });
     }
+
+    const { data: store_address } = await supabase.from("store_address").select("address,zip_code,state,city").eq("store_id", data?.stores?.id).maybeSingle();
 
     const serviceData = {
         name: data?.name,
@@ -28,6 +30,11 @@ export default async function Handler(
         attachments: data?.attachments,
         status: data?.status,
         service_type: data?.service_types?.name,
+        store: {
+            name: data?.stores?.name,
+            adderess: store_address
+        },
+        team: data?.teams,
         client: {
             name: data?.service_client[0]?.name ? `${data?.service_client[0]?.name.slice(0, 2)}******` : null,
             email: data?.service_client[0]?.email ? `${data?.service_client[0]?.email.slice(0, 3)}*****${data?.service_client[0]?.email.slice(data?.service_client[0]?.email.indexOf('@') - 1)}` : null,
