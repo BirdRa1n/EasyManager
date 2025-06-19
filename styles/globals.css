@@ -21,15 +21,10 @@
     max-width: 30vw;
 }
 
-body::-webkit-scrollbar {
+.no-scrollbar::-webkit-scrollbar {
     display: none;
 }
 
-body {
+.no-scrollbar {
     scrollbar-width: none;
-    -ms-overflow-style: none;
-}
-
-body {
-    overflow: hidden;
 }
