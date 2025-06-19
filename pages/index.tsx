@@ -20,8 +20,8 @@ export default function IndexPage() {
 
   return (
     <DefaultLayout>
-      <section className="flex flex-row items-start justify-center gap-2 py-8 md:py-10">
-        <div className="inline-block max-w-xl text-center justify-center">
+      <section className="flex flex-col items-center justify-center gap-2 py-8 md:py-10 md:flex-row ">
+        <div className="inline-block max-w-xl text-center justify-center md:order-first">
           <span className={title()}>Organize&nbsp;</span>
           <span className={title({ color: "blue" })}>seu negócio&nbsp;</span>
           <br />
@@ -33,8 +33,8 @@ export default function IndexPage() {
           </div>
         </div>
 
-        <div className="flex flex-col">
-          <Card className="max-w-full w-[340px]">
+        <div className="flex flex-col w-[340px]">
+          <Card className="max-w-full">
             <CardBody className="overflow-hidden">
               <AuthForm />
             </CardBody>
