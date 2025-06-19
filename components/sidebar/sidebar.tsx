@@ -12,16 +12,16 @@ import { SidebarMenu } from "./sidebar-menu";
 import { Sidebar } from "./sidebar.styles";
 
 export const SidebarWrapper = () => {
-  const { collapsed, setCollapsed, sidebarActiveItem, setSidebarActiveItem } = useSidebarContext();
+  const { isSidebarOpen, setIsSidebarOpen, sidebarActiveItem, setSidebarActiveItem } = useSidebarContext();
 
   return (
     <aside className="h-screen z-[20] sticky top-0">
-      {collapsed ? (
-        <div className={Sidebar.Overlay()} onClick={() => setCollapsed(false)} />
+      {isSidebarOpen ? (
+        <div className={Sidebar.Overlay()} onClick={() => setIsSidebarOpen(false)} />
       ) : null}
       <div
         className={Sidebar({
-          collapsed: collapsed,
+          isSidebarOpen,
         })}
       >
         <div className={Sidebar.Header()}>
@@ -33,68 +33,64 @@ export const SidebarWrapper = () => {
               title="Início"
               icon={<HomeIcon />}
               isActive={sidebarActiveItem === "home"}
-              onClick={() => { setSidebarActiveItem("home") }}
+              onClick={() => setSidebarActiveItem("home")}
             />
             <SidebarMenu title="Geral">
               <SidebarItem
                 isActive={sidebarActiveItem === "members"}
                 title="Equipe"
                 icon={<CustomersIcon />}
-                onClick={() => { setSidebarActiveItem("members") }}
+                onClick={() => setSidebarActiveItem("members")}
               />
               <SidebarItem
                 isActive={sidebarActiveItem === "products"}
                 title="Produtos"
-                onClick={() => { setSidebarActiveItem("products") }}
                 icon={<ProductsIcon />}
+                onClick={() => setSidebarActiveItem("products")}
               />
               <SidebarItem
                 isActive={sidebarActiveItem === "services"}
-                onClick={() => { setSidebarActiveItem("services") }}
                 title="Serviços"
                 icon={<ReportsIcon />}
+                onClick={() => setSidebarActiveItem("services")}
               />
               <SidebarItem
                 isActive={sidebarActiveItem === "stores"}
-                onClick={() => { setSidebarActiveItem("stores") }}
                 title="Lojas"
                 icon={<FaStore className="fill-default-400 text-[24px] ml-0" />}
+                onClick={() => setSidebarActiveItem("stores")}
               />
               <SidebarItem
                 isActive={sidebarActiveItem === "suppliers"}
-                onClick={() => { setSidebarActiveItem("suppliers") }}
                 title="Fornecedores"
-                icon={<FaBuilding className="fill-default-400 min-h-[24px] min-w-24px] ml-1" />
-                }
+                icon={<FaBuilding className="fill-default-400 min-h-[24px] min-w-[24px] ml-1" />}
+                onClick={() => setSidebarActiveItem("suppliers")}
               />
             </SidebarMenu>
-
             <SidebarMenu title="Relatórios">
               <SidebarItem
                 isActive={sidebarActiveItem === "payments"}
-                onClick={() => { setSidebarActiveItem("payments") }}
                 title="Vendas"
                 icon={<PaymentsIcon />}
+                onClick={() => setSidebarActiveItem("payments")}
               />
               <SidebarItem
                 isActive={sidebarActiveItem === "reports"}
-                onClick={() => { setSidebarActiveItem("reports") }}
                 title="Relatórios"
                 icon={<ReportsIcon />}
+                onClick={() => setSidebarActiveItem("reports")}
               />
             </SidebarMenu>
-
             <SidebarMenu title="Opções">
               <SidebarItem
                 isActive={sidebarActiveItem === "settings"}
-                onClick={() => { setSidebarActiveItem("settings") }}
                 title="Configurações"
                 icon={<SettingsIcon />}
+                onClick={() => setSidebarActiveItem("settings")}
               />
             </SidebarMenu>
             <div className="mt-5" />
           </div>
-
         </div>
       </div>
     </aside>

@@ -1,14 +1,13 @@
-import React from "react";
-import { useSidebarContext } from "@/contexts/sidebar";
+import { useSidebarContext } from "@/layouts/layout-context";
 import { StyledBurgerButton } from "./navbar.styles";
 
 export const BurguerButton = () => {
-  const { collapsed, setCollapsed } = useSidebarContext();
+  const { isSidebarOpen, setIsSidebarOpen } = useSidebarContext();
 
   return (
     <div
-      className={StyledBurgerButton()}
-      onClick={() => setCollapsed(!collapsed)}
+      className={StyledBurgerButton({ open: isSidebarOpen })}
+      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
     >
       <div />
       <div />

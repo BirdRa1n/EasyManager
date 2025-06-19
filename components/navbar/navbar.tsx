@@ -19,33 +19,33 @@ export const NavbarWrapper = ({ children }: Props) => {
   const filterName = () => {
     switch (sidebarActiveItem) {
       case "home":
-        return "Início"
+        return "Início";
       case "members":
-        return "Equipe"
+        return "Equipe";
       case "products":
-        return "Produtos"
+        return "Produtos";
       case "payments":
-        return "Pagamentos"
+        return "Pagamentos";
       case "services":
-        return "Serviços"
+        return "Serviços";
       case "reports":
-        return "Relatórios"
+        return "Relatórios";
       case "settings":
-        return "Configurações"
+        return "Configurações";
       case "suppliers":
-        return "Fornecedores"
+        return "Fornecedores";
       case "stores":
-        return "Lojas"
+        return "Lojas";
       default:
-        return "Desconhecido"
+        return "Desconhecido";
     }
-  }
+  };
 
   return (
     <div className="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
       <Navbar
         isBordered
-        className="w-full "
+        className="w-full z-[100]" // Adicionado z-index
         classNames={{
           wrapper: "w-full max-w-full",
         }}
@@ -54,7 +54,7 @@ export const NavbarWrapper = ({ children }: Props) => {
           <BurguerButton />
         </NavbarContent>
         <NavbarContent className="w-full max-md:hidden">
-          <Breadcrumbs >
+          <Breadcrumbs>
             <BreadcrumbItem>Dashboard</BreadcrumbItem>
             <BreadcrumbItem>{filterName()}</BreadcrumbItem>
           </Breadcrumbs>

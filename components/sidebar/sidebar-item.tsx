@@ -1,32 +1,32 @@
 import usePrimaryColor from "@/constants/Colors";
-import { useSidebarContext } from "@/contexts/sidebar";
+import { useSidebarContext } from "@/layouts/layout-context";
 import clsx from "clsx";
 import NextLink from "next/link";
-import React from "react";
+import { ReactNode } from "react";
 
 interface Props {
   title: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   isActive?: boolean;
   href?: string;
   onClick?: () => void;
 }
 
 export const SidebarItem = ({ icon, title, isActive, href = "", onClick }: Props) => {
-  const { collapsed, setCollapsed } = useSidebarContext();
+  const { isSidebarOpen, setIsSidebarOpen } = useSidebarContext();
 
   const primaryColor = usePrimaryColor();
 
   const handleClick = () => {
     if (window.innerWidth < 768) {
-      setCollapsed(!collapsed);
+      setIsSidebarOpen(false); // Fecha a sidebar em mobile após clicar
     }
+    onClick?.();
   };
 
   return (
     <NextLink
       href={href}
-      onClick={onClick}
       className="text-default-900 active:bg-none max-w-full"
     >
       <div

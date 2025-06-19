@@ -3,15 +3,15 @@
 import { createContext, useContext } from "react";
 
 interface SidebarContext {
-  collapsed: boolean;
-  setCollapsed: (collapsed: boolean) => void;
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: (isOpen: boolean) => void;
   sidebarActiveItem: string;
   setSidebarActiveItem: (item: string) => void;
 }
 
 export const SidebarContext = createContext<SidebarContext>({
-  collapsed: false,
-  setCollapsed: () => { },
+  isSidebarOpen: false,
+  setIsSidebarOpen: () => { },
   sidebarActiveItem: "home",
   setSidebarActiveItem: () => { },
 });
