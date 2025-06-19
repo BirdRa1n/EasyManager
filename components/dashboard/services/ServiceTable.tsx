@@ -140,6 +140,7 @@ const columns = [
     { name: "DURAÇÃO", uid: "duration", sortable: true },
     { name: "LOJA", uid: "store", sortable: true },
     { name: "STATUS", uid: "status", sortable: true },
+    { name: "CRIADO EM", uid: "created_at", sortable: true },
     { name: "OPÇÕES", uid: "actions" },
 ];
 
@@ -147,7 +148,7 @@ export default function ServiceTable() {
     const [filterValue, setFilterValue] = React.useState("");
     const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
     const [visibleColumns, setVisibleColumns] = React.useState<Selection>(
-        new Set(["name", "description", "price", "duration", "store", "status", "actions"])
+        new Set(["name", "description", "price", "duration", "store", "status", "created_at", "actions"])
     );
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
     const [sortDescriptor, setSortDescriptor] = React.useState<SortDescriptor>({
@@ -252,6 +253,12 @@ export default function ServiceTable() {
                                     'Cancelado'}
                     </p>
                 );
+            case "created_at":
+                return (
+                    <p className="text-small">
+                        {new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(service?.created_at))} às {new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(service?.created_at))}
+                    </p>
+                )
             case "actions":
                 return (
                     <div className="relative flex justify-end items-center gap-2">
