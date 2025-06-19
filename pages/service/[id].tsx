@@ -69,6 +69,7 @@ const ServiceDetail = () => {
             case 'completed': return 'Concluído';
             case 'pending': return 'Pendente';
             case 'cancelled': return 'Cancelado';
+            case 'in_progress': return 'Em Andamento';
             default: return 'Desconhecido';
         }
     };
