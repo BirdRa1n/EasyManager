@@ -28,3 +28,8 @@
 .no-scrollbar {
     scrollbar-width: none;
 }
+
+.heroui-modal {
+    z-index: 500 !important;
+    /* Garante que o modal fique acima da sidebar (z-[202]) e navbar (z-[50]) */
+}
