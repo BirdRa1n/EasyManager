@@ -7,6 +7,8 @@ interface SidebarContext {
   setIsSidebarOpen: (isOpen: boolean) => void;
   sidebarActiveItem: string;
   setSidebarActiveItem: (item: string) => void;
+  sidebarTitle: string;
+  setSidebarTitle: (title: string) => void;
 }
 
 export const SidebarContext = createContext<SidebarContext>({
@@ -14,6 +16,8 @@ export const SidebarContext = createContext<SidebarContext>({
   setIsSidebarOpen: () => { },
   sidebarActiveItem: "home",
   setSidebarActiveItem: () => { },
+  sidebarTitle: "Início",
+  setSidebarTitle: () => { },
 });
 
 export const useSidebarContext = () => {

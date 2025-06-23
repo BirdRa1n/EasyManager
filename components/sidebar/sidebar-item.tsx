@@ -2,7 +2,7 @@ import usePrimaryColor from "@/constants/Colors";
 import { useSidebarContext } from "@/layouts/layout-context";
 import clsx from "clsx";
 import NextLink from "next/link";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 
 interface Props {
   title: string;
@@ -13,9 +13,14 @@ interface Props {
 }
 
 export const SidebarItem = ({ icon, title, isActive, href = "", onClick }: Props) => {
-  const { isSidebarOpen, setIsSidebarOpen } = useSidebarContext();
-
+  const { setIsSidebarOpen, sidebarActiveItem, setSidebarTitle } = useSidebarContext();
   const primaryColor = usePrimaryColor();
+
+  useEffect(() => {
+    if (isActive) {
+      setSidebarTitle(title);
+    }
+  }, [sidebarActiveItem]);
 
   const handleClick = () => {
     if (window.innerWidth < 768) {

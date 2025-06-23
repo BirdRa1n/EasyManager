@@ -13,7 +13,7 @@ interface Props {
 
 export const Layout = ({ children }: Props) => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
-  const { sidebarActiveItem, setSidebarActiveItem } = useSidebarContext();
+  const { sidebarActiveItem, setSidebarActiveItem, setSidebarTitle, sidebarTitle } = useSidebarContext();
   const [, setLocked] = useLockedBody(false);
 
   const handleToggleSidebar = () => {
@@ -29,6 +29,8 @@ export const Layout = ({ children }: Props) => {
         setIsSidebarOpen: handleToggleSidebar,
         sidebarActiveItem,
         setSidebarActiveItem,
+        sidebarTitle,
+        setSidebarTitle
       }}
     >
       <section className="flex h-screen">

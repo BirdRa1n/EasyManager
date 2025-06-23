@@ -14,32 +14,7 @@ interface Props {
 }
 
 export const NavbarWrapper = ({ children }: Props) => {
-  const { sidebarActiveItem } = useSidebarContext();
-
-  const filterName = () => {
-    switch (sidebarActiveItem) {
-      case "home":
-        return "Início";
-      case "members":
-        return "Equipe";
-      case "products":
-        return "Produtos";
-      case "payments":
-        return "Pagamentos";
-      case "services":
-        return "Serviços";
-      case "reports":
-        return "Relatórios";
-      case "settings":
-        return "Configurações";
-      case "suppliers":
-        return "Fornecedores";
-      case "stores":
-        return "Lojas";
-      default:
-        return "Desconhecido";
-    }
-  };
+  const { sidebarTitle } = useSidebarContext();
 
   return (
     <div className="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
@@ -56,7 +31,7 @@ export const NavbarWrapper = ({ children }: Props) => {
         <NavbarContent className="w-full max-md:hidden">
           <Breadcrumbs>
             <BreadcrumbItem>Dashboard</BreadcrumbItem>
-            <BreadcrumbItem>{filterName()}</BreadcrumbItem>
+            <BreadcrumbItem>{sidebarTitle}</BreadcrumbItem>
           </Breadcrumbs>
           <Input
             startContent={<SearchIcon />}

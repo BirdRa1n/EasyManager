@@ -8,6 +8,8 @@ interface SidebarContextType {
   setCollapsed: (value: boolean) => void;
   sidebarActiveItem: string;
   setSidebarActiveItem: (item: string) => void;
+  sidebarTitle: string;
+  setSidebarTitle: (title: string) => void;
 }
 
 // Contexto com valor inicial undefined
@@ -17,6 +19,7 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 export const SidebarProvider = ({ children }: { children: ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarActiveItem, setSidebarActiveItem] = useState("home");
+  const [sidebarTitle, setSidebarTitle] = useState("Início");
 
   useEffect(() => {
     const storedSidebarActiveItem = localStorage.getItem("sidebarActiveItem");
@@ -38,6 +41,8 @@ export const SidebarProvider = ({ children }: { children: ReactNode }) => {
         setCollapsed,
         sidebarActiveItem,
         setSidebarActiveItem,
+        sidebarTitle,
+        setSidebarTitle
       }}
     >
       {children}
