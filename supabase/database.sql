@@ -52,6 +52,19 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
 
 
+CREATE OR REPLACE FUNCTION "public"."has_permission"("t_team_id" "uuid", "permission" "text") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    AS $$
+  SELECT COALESCE((permissions->>permission)::boolean, false)
+  FROM public.team_members
+  WHERE user_id = auth.uid() AND team_id = t_team_id
+  LIMIT 1;
+$$;
+
+
+ALTER FUNCTION "public"."has_permission"("t_team_id" "uuid", "permission" "text") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."is_team_admin"("t_uuid" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     AS $_$
@@ -253,7 +266,7 @@ CREATE TABLE IF NOT EXISTS "public"."team_members" (
     "role" "text" NOT NULL,
     "permissions" "jsonb",
     "joined_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "team_members_role_check" CHECK (("role" = ANY (ARRAY['admin'::"text", 'manager'::"text", 'viewer'::"text"])))
+    CONSTRAINT "team_members_role_check" CHECK (("role" = ANY (ARRAY['admin'::"text", 'manager'::"text", 'viewer'::"text", 'member'::"text"])))
 );
 
 
@@ -523,46 +536,370 @@ ALTER TABLE ONLY "public"."teams"
 
 
 
-CREATE POLICY "Admins podem adicionar membros ao seu time" ON "public"."team_members" FOR INSERT WITH CHECK ("public"."is_team_admin"("team_id"));
+CREATE POLICY "Admins ou membros com permissão podem criar categorias" ON "public"."categories" FOR INSERT TO "authenticated" WITH CHECK ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'categories.create'::"text"))));
 
 
 
-CREATE POLICY "Admins podem deletar seu time" ON "public"."teams" FOR DELETE USING ("public"."is_team_admin"("id"));
+CREATE POLICY "Admins ou membros com permissão podem criar clientes de servi" ON "public"."service_client" FOR INSERT TO "authenticated" WITH CHECK ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'service_clients.create'::"text"))));
 
 
 
-CREATE POLICY "Admins podem editar membros do seu time" ON "public"."team_members" FOR UPDATE USING ("public"."is_team_admin"("team_id"));
+CREATE POLICY "Admins ou membros com permissão podem criar contatos de lojas" ON "public"."store_contacts" FOR INSERT TO "authenticated" WITH CHECK ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.manage_contacts'::"text"))));
 
 
 
-CREATE POLICY "Admins podem editar seu time" ON "public"."teams" FOR UPDATE USING ("public"."is_team_admin"("id"));
+CREATE POLICY "Admins ou membros com permissão podem criar endereços de loja" ON "public"."store_address" FOR INSERT TO "authenticated" WITH CHECK ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.manage_address'::"text"))));
 
 
 
-CREATE POLICY "Admins podem remover membros do seu time" ON "public"."team_members" FOR DELETE USING ("public"."is_team_admin"("team_id"));
+CREATE POLICY "Admins ou membros com permissão podem criar fornecedores" ON "public"."suppliers" FOR INSERT TO "authenticated" WITH CHECK ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'suppliers.create'::"text"))));
 
 
 
-CREATE POLICY "Admins podem ver membros do seu time" ON "public"."team_members" FOR SELECT USING ("public"."is_team_admin"("team_id"));
+CREATE POLICY "Admins ou membros com permissão podem criar fornecedores de lo" ON "public"."store_suppliers" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."stores"
+  WHERE (("stores"."id" = "store_suppliers"."store_id") AND ("stores"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("stores"."team_id") OR "public"."has_permission"("stores"."team_id", 'store_suppliers.create'::"text"))))));
 
 
 
-CREATE POLICY "Admins podem ver times que participam" ON "public"."teams" FOR SELECT USING ("public"."is_team_admin"("id"));
+CREATE POLICY "Admins ou membros com permissão podem criar identificadores" ON "public"."product_identifiers" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."products"
+  WHERE (("products"."id" = "product_identifiers"."product_id") AND ("products"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("products"."team_id") OR "public"."has_permission"("products"."team_id", 'product_identifiers.create'::"text"))))));
 
 
 
-CREATE POLICY "Criador do time pode se adicionar como admin" ON "public"."team_members" FOR INSERT WITH CHECK ((("user_id" = "auth"."uid"()) AND ("team_id" IN ( SELECT "teams"."id"
+CREATE POLICY "Admins ou membros com permissão podem criar lojas" ON "public"."stores" FOR INSERT TO "authenticated" WITH CHECK ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.create'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem criar produtos" ON "public"."products" FOR INSERT TO "authenticated" WITH CHECK ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'products.create'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem criar produtos de fornec" ON "public"."supplier_products" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."suppliers"
+  WHERE (("suppliers"."id" = "supplier_products"."supplier_id") AND ("suppliers"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("suppliers"."team_id") OR "public"."has_permission"("suppliers"."team_id", 'supplier_products.create'::"text"))))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem criar produtos de lojas" ON "public"."store_products" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."stores"
+  WHERE (("stores"."id" = "store_products"."store_id") AND ("stores"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("stores"."team_id") OR "public"."has_permission"("stores"."team_id", 'store_products.manage_stock'::"text"))))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem criar serviços" ON "public"."services" FOR INSERT TO "authenticated" WITH CHECK ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'services.create'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem criar tipos de serviços" ON "public"."service_types" FOR INSERT TO "authenticated" WITH CHECK ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'service_types.create'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem editar categorias" ON "public"."categories" FOR UPDATE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'categories.update'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem editar clientes de servi" ON "public"."service_client" FOR UPDATE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'service_clients.update'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem editar contatos de lojas" ON "public"."store_contacts" FOR UPDATE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.manage_contacts'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem editar endereços de loj" ON "public"."store_address" FOR UPDATE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.manage_address'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem editar fornecedores" ON "public"."suppliers" FOR UPDATE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'suppliers.update'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem editar identificadores" ON "public"."product_identifiers" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."products"
+  WHERE (("products"."id" = "product_identifiers"."product_id") AND ("products"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("products"."team_id") OR "public"."has_permission"("products"."team_id", 'product_identifiers.update'::"text"))))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem editar lojas" ON "public"."stores" FOR UPDATE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.update'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem editar produtos" ON "public"."products" FOR UPDATE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'products.update'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem editar produtos de lojas" ON "public"."store_products" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."stores"
+  WHERE (("stores"."id" = "store_products"."store_id") AND ("stores"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("stores"."team_id") OR "public"."has_permission"("stores"."team_id", 'store_products.manage_stock'::"text") OR "public"."has_permission"("stores"."team_id", 'store_products.manage_price'::"text"))))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem editar serviços" ON "public"."services" FOR UPDATE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'services.update'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem editar tipos de serviço" ON "public"."service_types" FOR UPDATE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'service_types.update'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir categorias" ON "public"."categories" FOR DELETE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'categories.delete'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir clientes de serv" ON "public"."service_client" FOR DELETE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'service_clients.delete'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir contatos de loja" ON "public"."store_contacts" FOR DELETE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.manage_contacts'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir endereços de lo" ON "public"."store_address" FOR DELETE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.manage_address'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir fornecedores" ON "public"."suppliers" FOR DELETE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'suppliers.delete'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir fornecedores de " ON "public"."store_suppliers" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."stores"
+  WHERE (("stores"."id" = "store_suppliers"."store_id") AND ("stores"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("stores"."team_id") OR "public"."has_permission"("stores"."team_id", 'store_suppliers.delete'::"text"))))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir identificadores" ON "public"."product_identifiers" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."products"
+  WHERE (("products"."id" = "product_identifiers"."product_id") AND ("products"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("products"."team_id") OR "public"."has_permission"("products"."team_id", 'product_identifiers.delete'::"text"))))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir lojas" ON "public"."stores" FOR DELETE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.delete'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir produtos" ON "public"."products" FOR DELETE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'products.delete'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir produtos de forn" ON "public"."supplier_products" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."suppliers"
+  WHERE (("suppliers"."id" = "supplier_products"."supplier_id") AND ("suppliers"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("suppliers"."team_id") OR "public"."has_permission"("suppliers"."team_id", 'supplier_products.delete'::"text"))))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir produtos de loja" ON "public"."store_products" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."stores"
+  WHERE (("stores"."id" = "store_products"."store_id") AND ("stores"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("stores"."team_id") OR "public"."has_permission"("stores"."team_id", 'store_products.manage_stock'::"text"))))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir serviços" ON "public"."services" FOR DELETE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'services.delete'::"text"))));
+
+
+
+CREATE POLICY "Admins ou membros com permissão podem excluir tipos de serviç" ON "public"."service_types" FOR DELETE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'service_types.delete'::"text"))));
+
+
+
+CREATE POLICY "Admins podem adicionar membros" ON "public"."team_members" FOR INSERT TO "authenticated" WITH CHECK ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND "public"."is_team_admin"("team_id")));
+
+
+
+CREATE POLICY "Admins podem editar membros" ON "public"."team_members" FOR UPDATE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND "public"."is_team_admin"("team_id")));
+
+
+
+CREATE POLICY "Admins podem editar times" ON "public"."teams" FOR UPDATE TO "authenticated" USING ((("id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND "public"."is_team_admin"("id")));
+
+
+
+CREATE POLICY "Admins podem excluir times" ON "public"."teams" FOR DELETE TO "authenticated" USING ((("id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND "public"."is_team_admin"("id")));
+
+
+
+CREATE POLICY "Admins podem remover membros" ON "public"."team_members" FOR DELETE TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND "public"."is_team_admin"("team_id")));
+
+
+
+CREATE POLICY "Criador do time pode se adicionar" ON "public"."team_members" FOR INSERT TO "authenticated" WITH CHECK ((("user_id" = "auth"."uid"()) AND ("team_id" IN ( SELECT "teams"."id"
    FROM "public"."teams"
-  WHERE ("teams"."created_by" = "auth"."uid"())))));
+  WHERE ("teams"."created_by" = "auth"."uid"()))) AND ("role" = 'admin'::"text")));
 
 
 
-CREATE POLICY "Criador pode ver seu próprio time" ON "public"."teams" FOR SELECT USING (("created_by" = "auth"."uid"()));
+CREATE POLICY "Criador pode visualizar seu próprio time" ON "public"."teams" FOR SELECT TO "authenticated" USING (("created_by" = "auth"."uid"()));
 
 
 
-CREATE POLICY "Usuário autenticado pode criar seu próprio time" ON "public"."teams" FOR INSERT TO "authenticated" WITH CHECK (("created_by" = "auth"."uid"()));
+CREATE POLICY "Membros podem visualizar categorias" ON "public"."categories" FOR SELECT TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'categories.read'::"text"))));
 
+
+
+CREATE POLICY "Membros podem visualizar clientes de serviços" ON "public"."service_client" FOR SELECT TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'service_clients.read'::"text"))));
+
+
+
+CREATE POLICY "Membros podem visualizar contatos de lojas" ON "public"."store_contacts" FOR SELECT TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.read'::"text"))));
+
+
+
+CREATE POLICY "Membros podem visualizar endereços de lojas" ON "public"."store_address" FOR SELECT TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.read'::"text"))));
+
+
+
+CREATE POLICY "Membros podem visualizar fornecedores" ON "public"."suppliers" FOR SELECT TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'suppliers.read'::"text"))));
+
+
+
+CREATE POLICY "Membros podem visualizar fornecedores de lojas" ON "public"."store_suppliers" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."stores"
+  WHERE (("stores"."id" = "store_suppliers"."store_id") AND ("stores"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("stores"."team_id") OR "public"."has_permission"("stores"."team_id", 'stores.read'::"text"))))));
+
+
+
+CREATE POLICY "Membros podem visualizar identificadores de produtos" ON "public"."product_identifiers" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."products"
+  WHERE (("products"."id" = "product_identifiers"."product_id") AND ("products"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("products"."team_id") OR "public"."has_permission"("products"."team_id", 'products.read'::"text"))))));
+
+
+
+CREATE POLICY "Membros podem visualizar lojas" ON "public"."stores" FOR SELECT TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'stores.read'::"text"))));
+
+
+
+CREATE POLICY "Membros podem visualizar membros do time" ON "public"."team_members" FOR SELECT TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'team_members.read'::"text"))));
+
+
+
+CREATE POLICY "Membros podem visualizar produtos" ON "public"."products" FOR SELECT TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'products.read'::"text"))));
+
+
+
+CREATE POLICY "Membros podem visualizar produtos de fornecedores" ON "public"."supplier_products" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."suppliers"
+  WHERE (("suppliers"."id" = "supplier_products"."supplier_id") AND ("suppliers"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("suppliers"."team_id") OR "public"."has_permission"("suppliers"."team_id", 'suppliers.read'::"text"))))));
+
+
+
+CREATE POLICY "Membros podem visualizar produtos de lojas" ON "public"."store_products" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."stores"
+  WHERE (("stores"."id" = "store_products"."store_id") AND ("stores"."team_id" IN ( SELECT "user_team_ids"."team_id"
+           FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("stores"."team_id") OR "public"."has_permission"("stores"."team_id", 'stores.read'::"text"))))));
+
+
+
+CREATE POLICY "Membros podem visualizar serviços" ON "public"."services" FOR SELECT TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'services.read'::"text"))));
+
+
+
+CREATE POLICY "Membros podem visualizar times" ON "public"."teams" FOR SELECT TO "authenticated" USING ((("id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("id") OR "public"."has_permission"("id", 'teams.read'::"text"))));
+
+
+
+CREATE POLICY "Membros podem visualizar tipos de serviços" ON "public"."service_types" FOR SELECT TO "authenticated" USING ((("team_id" IN ( SELECT "user_team_ids"."team_id"
+   FROM "public"."user_team_ids")) AND ("public"."is_team_admin"("team_id") OR "public"."has_permission"("team_id", 'service_types.read'::"text"))));
+
+
+
+CREATE POLICY "Usuários autenticados podem criar times" ON "public"."teams" FOR INSERT TO "authenticated" WITH CHECK (("created_by" = "auth"."uid"()));
+
+
+
+ALTER TABLE "public"."categories" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."product_identifiers" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."products" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."service_client" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."service_types" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."services" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."store_address" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."store_contacts" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."store_products" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."store_suppliers" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."stores" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."supplier_products" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."suppliers" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."team_members" ENABLE ROW LEVEL SECURITY;
@@ -742,6 +1079,12 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+
+
+
+GRANT ALL ON FUNCTION "public"."has_permission"("t_team_id" "uuid", "permission" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."has_permission"("t_team_id" "uuid", "permission" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."has_permission"("t_team_id" "uuid", "permission" "text") TO "service_role";
 
 
 
