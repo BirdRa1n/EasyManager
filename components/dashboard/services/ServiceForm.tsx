@@ -40,7 +40,7 @@ export default function ServiceForm() {
             <ServiceTable />
             <Card className="w-full flex flex-col mt-10" shadow="none" id="service">
                 <CardBody>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                         <ServiceInfoSection formData={formData} setFormData={setFormData} />
                         <ServiceDetailsSection formData={formData} setFormData={setFormData} />
                         <CustomerInfoSection formData={formData} setFormData={setFormData} />
